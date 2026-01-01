@@ -1,0 +1,20 @@
+# Binaries
+/golangku
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Environment
+.env
+
+# Dependencies
+/vendor/
+
+# Build
+/dist/
+/bin/
+
+# IDE
+.idea/
+.vscode/

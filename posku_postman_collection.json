@@ -1,0 +1,1307 @@
+{
+  "info": {
+    "name": "POSKU API Collection",
+    "description": "Postman collection for POSKU Go API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Home",
+      "item": [
+        {
+          "name": "GET /",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": []
+            }
+          }
+        },
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /employees/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"admin\", \"password\": \"password\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/employees/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["employees", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "item": [
+        {
+          "name": "GET /companies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/companies",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["companies"]
+            }
+          }
+        },
+        {
+          "name": "GET /companies/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/companies/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["companies", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST /companies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Company Name\", \"address\": \"Company Address\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/companies",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["companies"]
+            }
+          }
+        },
+        {
+          "name": "PUT /companies/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Updated Company Name\", \"address\": \"Updated Company Address\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/companies/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["companies", "1"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /companies/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/companies/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["companies", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stores",
+      "item": [
+        {
+          "name": "GET /stores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/stores",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["stores"]
+            }
+          }
+        },
+        {
+          "name": "GET /stores/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/stores/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["stores", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST /stores",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"company_id\": 1, \"name\": \"Store Name\", \"location\": \"Store Location\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/stores",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["stores"]
+            }
+          }
+        },
+        {
+          "name": "PUT /stores/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"company_id\": 1, \"name\": \"Updated Store Name\", \"location\": \"Updated Store Location\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/stores/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["stores", "1"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /stores/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/stores/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["stores", "1"]
+            }
+          }
+        },
+        {
+          "name": "GET /companies/:company_id/stores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/companies/1/stores",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["companies", "1", "stores"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Warehouses",
+      "item": [
+        {
+          "name": "GET /warehouses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/warehouses",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["warehouses"]
+            }
+          }
+        },
+        {
+          "name": "GET /warehouses/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/warehouses/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["warehouses", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST /warehouses",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"store_id\": 1, \"name\": \"Warehouse Name\", \"location\": \"Warehouse Location\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/warehouses",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["warehouses"]
+            }
+          }
+        },
+        {
+          "name": "PUT /warehouses/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"store_id\": 1, \"name\": \"Updated Warehouse Name\", \"location\": \"Updated Warehouse Location\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/warehouses/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["warehouses", "1"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /warehouses/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/warehouses/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["warehouses", "1"]
+            }
+          }
+        },
+        {
+          "name": "GET /stores/:store_id/warehouse",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/stores/1/warehouse",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["stores", "1", "warehouse"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "GET /products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/products",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["products"]
+            }
+          }
+        },
+        {
+          "name": "GET /products/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:2040/products/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["products", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST /products",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Product Name\", \"description\": \"Product Description\", \"price\": 10.0, \"unit\": \"pcs\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/products",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["products"]
+            }
+          }
+        },
+        {
+          "name": "PUT /products/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Updated Product Name\", \"description\": \"Updated Product Description\", \"price\": 15.0, \"unit\": \"pcs\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/products/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["products", "1"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /products/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/products/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["products", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Employees",
+      "item": [
+        {
+          "name": "GET /employees",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/employees",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["employees"]
+            }
+          }
+        },
+        {
+          "name": "GET /employees/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/employees/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["employees", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST /employees",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"company_id\": 1, \"store_id\": 1, \"name\": \"Employee Name\", \"username\": \"employee\", \"password\": \"password\", \"role\": \"user\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/employees",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["employees"]
+            }
+          }
+        },
+        {
+          "name": "PUT /employees/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"company_id\": 1, \"store_id\": 1, \"name\": \"Updated Employee Name\", \"username\": \"employee\", \"password\": \"password\", \"role\": \"user\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/employees/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["employees", "1"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /employees/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/employees/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["employees", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "GET /customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/customers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["customers"]
+            }
+          }
+        },
+        {
+          "name": "GET /customers/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/customers/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["customers", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST /customers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"company_id\": 1, \"name\": \"Customer Name\", \"email\": \"customer@example.com\", \"phone\": \"123456789\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/customers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["customers"]
+            }
+          }
+        },
+        {
+          "name": "PUT /customers/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"company_id\": 1, \"name\": \"Updated Customer Name\", \"email\": \"updated@example.com\", \"phone\": \"987654321\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/customers/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["customers", "1"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /customers/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/customers/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["customers", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sales",
+      "item": [
+        {
+          "name": "GET /sales",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/sales",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["sales"]
+            }
+          }
+        },
+        {
+          "name": "GET /sales/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/sales/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["sales", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST /sales",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"customer_id\": 1, \"employee_id\": 1, \"total_amount\": 100.0, \"status\": \"pending\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/sales",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["sales"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /sales/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/sales/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["sales", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sales Items",
+      "item": [
+        {
+          "name": "GET /sales/items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/sales/items",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["sales", "items"]
+            }
+          }
+        },
+        {
+          "name": "GET /sales/items/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/sales/items/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["sales", "items", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST /sales/items",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sales_transaction_id\": 1, \"product_id\": 1, \"quantity\": 2, \"price\": 10.0}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/sales/items",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["sales", "items"]
+            }
+          }
+        },
+        {
+          "name": "PUT /sales/items/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sales_transaction_id\": 1, \"product_id\": 1, \"quantity\": 3, \"price\": 10.0}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/sales/items/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["sales", "items", "1"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /sales/items/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/sales/items/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["sales", "items", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "GET /payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/payments",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["payments"]
+            }
+          }
+        },
+        {
+          "name": "GET /payments/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/payments/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["payments", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST /payments",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sales_transaction_id\": 1, \"amount\": 100.0, \"payment_method\": \"cash\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/payments",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["payments"]
+            }
+          }
+        },
+        {
+          "name": "PUT /payments/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sales_transaction_id\": 1, \"amount\": 150.0, \"payment_method\": \"card\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/payments/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["payments", "1"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /payments/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/payments/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["payments", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stock Transfers",
+      "item": [
+        {
+          "name": "GET /stock_transfers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/stock_transfers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["stock_transfers"]
+            }
+          }
+        },
+        {
+          "name": "GET /stock_transfers/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/stock_transfers/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["stock_transfers", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST /stock_transfers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"from_warehouse_id\": 1, \"to_warehouse_id\": 2, \"status\": \"pending\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/stock_transfers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["stock_transfers"]
+            }
+          }
+        },
+        {
+          "name": "PUT /stock_transfers/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"from_warehouse_id\": 1, \"to_warehouse_id\": 2, \"status\": \"completed\"}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/stock_transfers/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["stock_transfers", "1"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /stock_transfers/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/stock_transfers/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["stock_transfers", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transfer Items",
+      "item": [
+        {
+          "name": "GET /transfer_items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/transfer_items",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["transfer_items"]
+            }
+          }
+        },
+        {
+          "name": "GET /transfer_items/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/transfer_items/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["transfer_items", "1"]
+            }
+          }
+        },
+        {
+          "name": "POST /transfer_items",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"stock_transfer_id\": 1, \"product_id\": 1, \"quantity\": 10}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/transfer_items",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["transfer_items"]
+            }
+          }
+        },
+        {
+          "name": "PUT /transfer_items/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"stock_transfer_id\": 1, \"product_id\": 1, \"quantity\": 15}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/transfer_items/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["transfer_items", "1"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /transfer_items/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:2040/transfer_items/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "2040",
+              "path": ["transfer_items", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
