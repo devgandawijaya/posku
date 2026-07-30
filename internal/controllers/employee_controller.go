@@ -43,6 +43,24 @@ func CreateEmployee(c *gin.Context) {
 		return
 	}
 
+	var company models.Company
+	if err := database.DB.First(&company, req.CompanyID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "company not found"})
+		return
+	}
+
+	if req.StoreID != nil {
+		var store models.Store
+		if err := database.DB.First(&store, *req.StoreID).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "store not found"})
+			return
+		}
+		if store.CompanyID != req.CompanyID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "store must belong to the same company"})
+			return
+		}
+	}
+
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
