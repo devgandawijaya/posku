@@ -87,7 +87,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"John Doe\", \"username\": \"johndoe\", \"password\": \"password123\", \"role\": \"user\", \"company_id\": 1}"
+              "raw": "{\"name\": \"Admin User\", \"username\": \"admin\", \"password\": \"admin123\", \"role\": \"admin\", \"company_id\": 3}"
             },
             "url": {
               "raw": "http://localhost:2040/employees/register",
