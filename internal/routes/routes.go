@@ -18,6 +18,7 @@ func SetupRoutes(r *gin.Engine) {
 
 	// Public / auth
 	r.POST("/employees/login", controllers.EmployeeLogin)
+	r.POST("/employees/register", controllers.CreateEmployee)
 
 	// ===========================
 	// Company routes

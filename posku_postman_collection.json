@@ -16,7 +16,9 @@
             "url": {
               "raw": "http://localhost:2040/",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
               "path": []
             }
@@ -30,9 +32,13 @@
             "url": {
               "raw": "http://localhost:2040/health",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["health"]
+              "path": [
+                "health"
+              ]
             }
           }
         }
@@ -58,9 +64,42 @@
             "url": {
               "raw": "http://localhost:2040/employees/login",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["employees", "login"]
+              "path": [
+                "employees",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /employees/register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Admin User\", \"username\": \"admin\", \"password\": \"admin123\", \"role\": \"admin\", \"company_id\": 3}"
+            },
+            "url": {
+              "raw": "http://localhost:2040/employees/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "2040",
+              "path": [
+                "employees",
+                "register"
+              ]
             }
           }
         }
@@ -77,9 +116,13 @@
             "url": {
               "raw": "http://localhost:2040/companies",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["companies"]
+              "path": [
+                "companies"
+              ]
             }
           }
         },
@@ -91,9 +134,14 @@
             "url": {
               "raw": "http://localhost:2040/companies/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["companies", "1"]
+              "path": [
+                "companies",
+                "1"
+              ]
             }
           }
         },
@@ -118,9 +166,13 @@
             "url": {
               "raw": "http://localhost:2040/companies",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["companies"]
+              "path": [
+                "companies"
+              ]
             }
           }
         },
@@ -145,9 +197,14 @@
             "url": {
               "raw": "http://localhost:2040/companies/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["companies", "1"]
+              "path": [
+                "companies",
+                "1"
+              ]
             }
           }
         },
@@ -164,9 +221,14 @@
             "url": {
               "raw": "http://localhost:2040/companies/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["companies", "1"]
+              "path": [
+                "companies",
+                "1"
+              ]
             }
           }
         }
@@ -183,9 +245,13 @@
             "url": {
               "raw": "http://localhost:2040/stores",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["stores"]
+              "path": [
+                "stores"
+              ]
             }
           }
         },
@@ -197,9 +263,14 @@
             "url": {
               "raw": "http://localhost:2040/stores/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["stores", "1"]
+              "path": [
+                "stores",
+                "1"
+              ]
             }
           }
         },
@@ -224,9 +295,13 @@
             "url": {
               "raw": "http://localhost:2040/stores",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["stores"]
+              "path": [
+                "stores"
+              ]
             }
           }
         },
@@ -251,9 +326,14 @@
             "url": {
               "raw": "http://localhost:2040/stores/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["stores", "1"]
+              "path": [
+                "stores",
+                "1"
+              ]
             }
           }
         },
@@ -270,9 +350,14 @@
             "url": {
               "raw": "http://localhost:2040/stores/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["stores", "1"]
+              "path": [
+                "stores",
+                "1"
+              ]
             }
           }
         },
@@ -284,9 +369,15 @@
             "url": {
               "raw": "http://localhost:2040/companies/1/stores",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["companies", "1", "stores"]
+              "path": [
+                "companies",
+                "1",
+                "stores"
+              ]
             }
           }
         }
@@ -303,9 +394,13 @@
             "url": {
               "raw": "http://localhost:2040/warehouses",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["warehouses"]
+              "path": [
+                "warehouses"
+              ]
             }
           }
         },
@@ -317,9 +412,14 @@
             "url": {
               "raw": "http://localhost:2040/warehouses/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["warehouses", "1"]
+              "path": [
+                "warehouses",
+                "1"
+              ]
             }
           }
         },
@@ -344,9 +444,13 @@
             "url": {
               "raw": "http://localhost:2040/warehouses",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["warehouses"]
+              "path": [
+                "warehouses"
+              ]
             }
           }
         },
@@ -371,9 +475,14 @@
             "url": {
               "raw": "http://localhost:2040/warehouses/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["warehouses", "1"]
+              "path": [
+                "warehouses",
+                "1"
+              ]
             }
           }
         },
@@ -390,9 +499,14 @@
             "url": {
               "raw": "http://localhost:2040/warehouses/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["warehouses", "1"]
+              "path": [
+                "warehouses",
+                "1"
+              ]
             }
           }
         },
@@ -404,9 +518,15 @@
             "url": {
               "raw": "http://localhost:2040/stores/1/warehouse",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["stores", "1", "warehouse"]
+              "path": [
+                "stores",
+                "1",
+                "warehouse"
+              ]
             }
           }
         }
@@ -423,9 +543,13 @@
             "url": {
               "raw": "http://localhost:2040/products",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["products"]
+              "path": [
+                "products"
+              ]
             }
           }
         },
@@ -437,9 +561,14 @@
             "url": {
               "raw": "http://localhost:2040/products/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["products", "1"]
+              "path": [
+                "products",
+                "1"
+              ]
             }
           }
         },
@@ -464,9 +593,13 @@
             "url": {
               "raw": "http://localhost:2040/products",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["products"]
+              "path": [
+                "products"
+              ]
             }
           }
         },
@@ -491,9 +624,14 @@
             "url": {
               "raw": "http://localhost:2040/products/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["products", "1"]
+              "path": [
+                "products",
+                "1"
+              ]
             }
           }
         },
@@ -510,9 +648,14 @@
             "url": {
               "raw": "http://localhost:2040/products/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["products", "1"]
+              "path": [
+                "products",
+                "1"
+              ]
             }
           }
         }
@@ -534,9 +677,13 @@
             "url": {
               "raw": "http://localhost:2040/employees",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["employees"]
+              "path": [
+                "employees"
+              ]
             }
           }
         },
@@ -553,9 +700,14 @@
             "url": {
               "raw": "http://localhost:2040/employees/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["employees", "1"]
+              "path": [
+                "employees",
+                "1"
+              ]
             }
           }
         },
@@ -580,9 +732,13 @@
             "url": {
               "raw": "http://localhost:2040/employees",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["employees"]
+              "path": [
+                "employees"
+              ]
             }
           }
         },
@@ -607,9 +763,14 @@
             "url": {
               "raw": "http://localhost:2040/employees/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["employees", "1"]
+              "path": [
+                "employees",
+                "1"
+              ]
             }
           }
         },
@@ -626,9 +787,14 @@
             "url": {
               "raw": "http://localhost:2040/employees/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["employees", "1"]
+              "path": [
+                "employees",
+                "1"
+              ]
             }
           }
         }
@@ -650,9 +816,13 @@
             "url": {
               "raw": "http://localhost:2040/customers",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["customers"]
+              "path": [
+                "customers"
+              ]
             }
           }
         },
@@ -669,9 +839,14 @@
             "url": {
               "raw": "http://localhost:2040/customers/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["customers", "1"]
+              "path": [
+                "customers",
+                "1"
+              ]
             }
           }
         },
@@ -696,9 +871,13 @@
             "url": {
               "raw": "http://localhost:2040/customers",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["customers"]
+              "path": [
+                "customers"
+              ]
             }
           }
         },
@@ -723,9 +902,14 @@
             "url": {
               "raw": "http://localhost:2040/customers/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["customers", "1"]
+              "path": [
+                "customers",
+                "1"
+              ]
             }
           }
         },
@@ -742,9 +926,14 @@
             "url": {
               "raw": "http://localhost:2040/customers/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["customers", "1"]
+              "path": [
+                "customers",
+                "1"
+              ]
             }
           }
         }
@@ -766,9 +955,13 @@
             "url": {
               "raw": "http://localhost:2040/sales",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["sales"]
+              "path": [
+                "sales"
+              ]
             }
           }
         },
@@ -785,9 +978,14 @@
             "url": {
               "raw": "http://localhost:2040/sales/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["sales", "1"]
+              "path": [
+                "sales",
+                "1"
+              ]
             }
           }
         },
@@ -812,9 +1010,13 @@
             "url": {
               "raw": "http://localhost:2040/sales",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["sales"]
+              "path": [
+                "sales"
+              ]
             }
           }
         },
@@ -831,9 +1033,14 @@
             "url": {
               "raw": "http://localhost:2040/sales/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["sales", "1"]
+              "path": [
+                "sales",
+                "1"
+              ]
             }
           }
         }
@@ -855,9 +1062,14 @@
             "url": {
               "raw": "http://localhost:2040/sales/items",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["sales", "items"]
+              "path": [
+                "sales",
+                "items"
+              ]
             }
           }
         },
@@ -874,9 +1086,15 @@
             "url": {
               "raw": "http://localhost:2040/sales/items/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["sales", "items", "1"]
+              "path": [
+                "sales",
+                "items",
+                "1"
+              ]
             }
           }
         },
@@ -901,9 +1119,14 @@
             "url": {
               "raw": "http://localhost:2040/sales/items",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["sales", "items"]
+              "path": [
+                "sales",
+                "items"
+              ]
             }
           }
         },
@@ -928,9 +1151,15 @@
             "url": {
               "raw": "http://localhost:2040/sales/items/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["sales", "items", "1"]
+              "path": [
+                "sales",
+                "items",
+                "1"
+              ]
             }
           }
         },
@@ -947,9 +1176,15 @@
             "url": {
               "raw": "http://localhost:2040/sales/items/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["sales", "items", "1"]
+              "path": [
+                "sales",
+                "items",
+                "1"
+              ]
             }
           }
         }
@@ -971,9 +1206,13 @@
             "url": {
               "raw": "http://localhost:2040/payments",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["payments"]
+              "path": [
+                "payments"
+              ]
             }
           }
         },
@@ -990,9 +1229,14 @@
             "url": {
               "raw": "http://localhost:2040/payments/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["payments", "1"]
+              "path": [
+                "payments",
+                "1"
+              ]
             }
           }
         },
@@ -1017,9 +1261,13 @@
             "url": {
               "raw": "http://localhost:2040/payments",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["payments"]
+              "path": [
+                "payments"
+              ]
             }
           }
         },
@@ -1044,9 +1292,14 @@
             "url": {
               "raw": "http://localhost:2040/payments/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["payments", "1"]
+              "path": [
+                "payments",
+                "1"
+              ]
             }
           }
         },
@@ -1063,9 +1316,14 @@
             "url": {
               "raw": "http://localhost:2040/payments/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["payments", "1"]
+              "path": [
+                "payments",
+                "1"
+              ]
             }
           }
         }
@@ -1087,9 +1345,13 @@
             "url": {
               "raw": "http://localhost:2040/stock_transfers",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["stock_transfers"]
+              "path": [
+                "stock_transfers"
+              ]
             }
           }
         },
@@ -1106,9 +1368,14 @@
             "url": {
               "raw": "http://localhost:2040/stock_transfers/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["stock_transfers", "1"]
+              "path": [
+                "stock_transfers",
+                "1"
+              ]
             }
           }
         },
@@ -1133,9 +1400,13 @@
             "url": {
               "raw": "http://localhost:2040/stock_transfers",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["stock_transfers"]
+              "path": [
+                "stock_transfers"
+              ]
             }
           }
         },
@@ -1160,9 +1431,14 @@
             "url": {
               "raw": "http://localhost:2040/stock_transfers/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["stock_transfers", "1"]
+              "path": [
+                "stock_transfers",
+                "1"
+              ]
             }
           }
         },
@@ -1179,9 +1455,14 @@
             "url": {
               "raw": "http://localhost:2040/stock_transfers/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["stock_transfers", "1"]
+              "path": [
+                "stock_transfers",
+                "1"
+              ]
             }
           }
         }
@@ -1203,9 +1484,13 @@
             "url": {
               "raw": "http://localhost:2040/transfer_items",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["transfer_items"]
+              "path": [
+                "transfer_items"
+              ]
             }
           }
         },
@@ -1222,9 +1507,14 @@
             "url": {
               "raw": "http://localhost:2040/transfer_items/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["transfer_items", "1"]
+              "path": [
+                "transfer_items",
+                "1"
+              ]
             }
           }
         },
@@ -1249,9 +1539,13 @@
             "url": {
               "raw": "http://localhost:2040/transfer_items",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["transfer_items"]
+              "path": [
+                "transfer_items"
+              ]
             }
           }
         },
@@ -1276,9 +1570,14 @@
             "url": {
               "raw": "http://localhost:2040/transfer_items/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["transfer_items", "1"]
+              "path": [
+                "transfer_items",
+                "1"
+              ]
             }
           }
         },
@@ -1295,9 +1594,14 @@
             "url": {
               "raw": "http://localhost:2040/transfer_items/1",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "2040",
-              "path": ["transfer_items", "1"]
+              "path": [
+                "transfer_items",
+                "1"
+              ]
             }
           }
         }
