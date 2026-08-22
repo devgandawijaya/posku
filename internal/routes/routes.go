@@ -10,10 +10,14 @@ import (
 func SetupRoutes(r *gin.Engine) {
 	// Add CORS middleware to all routes
 	r.Use(middlewares.CORSMiddleware())
+	r.Use(middlewares.JSONResponseMiddleware())
 
 	r.GET("/", controllers.Home)
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
+	})
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(404, gin.H{"error": "Route not found"})
 	})
 
 	// Public / auth
