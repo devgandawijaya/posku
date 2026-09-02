@@ -1,4 +1,4 @@
-package database
+﻿package database
 
 import (
 	"fmt"
@@ -104,6 +104,7 @@ func Migrate() {
 
 	seedIntegrationCatalog()
 	seedPlans()
+	SeedSampleData()
 
 	log.Println("Database migrated successfully")
 }
