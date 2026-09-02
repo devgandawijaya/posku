@@ -35,7 +35,10 @@ func AuthRequired() gin.HandlerFunc {
 
 		if claims, ok := tok.Claims.(jwt.MapClaims); ok {
 			c.Set("employee_id", claims["employee_id"])
+			c.Set("employee_name", claims["employee_name"])
 			c.Set("employee_role", claims["role"])
+			c.Set("company_id", claims["company_id"])
+			c.Set("permissions", claims["permissions"])
 		}
 
 		c.Next()

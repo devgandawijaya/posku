@@ -18,6 +18,47 @@ type UpdateCompanyRequest struct {
 	Address string `json:"address"`
 }
 
+// allPermissionsJSON builds a permission matrix JSON with every module/action granted.
+func allPermissionsJSON() string {
+	items := make([]PermissionInput, 0)
+	for _, m := range models.PermissionModules {
+		for _, a := range models.PermissionActions {
+			items = append(items, PermissionInput{Module: m, Action: a, Granted: true})
+		}
+	}
+	return encodePermissions(items)
+}
+
+// seedDefaultRoles creates the system "admin" (scope company, full access) and
+// a base "user" (kasir, scope store) role for a newly created tenant/company.
+func seedDefaultRoles(companyID uint) {
+	database.DB.Create(&models.Role{
+		CompanyID:   companyID,
+		Name:        "admin",
+		Description: "Pemilik/administrator tenant - akses penuh",
+		Scope:       "company",
+		IsSystem:    true,
+		Status:      "aktif",
+		Permissions: allPermissionsJSON(),
+		StoreIDs:    "[]",
+	})
+	database.DB.Create(&models.Role{
+		CompanyID:   companyID,
+		Name:        "user",
+		Description: "Kasir - akses operasional dasar per outlet",
+		Scope:       "store",
+		IsSystem:    false,
+		Status:      "aktif",
+		Permissions: encodePermissions([]PermissionInput{
+			{Module: "kasir", Action: "view", Granted: true},
+			{Module: "kasir", Action: "create", Granted: true},
+			{Module: "produk", Action: "view", Granted: true},
+			{Module: "stok", Action: "view", Granted: true},
+		}),
+		StoreIDs: "[]",
+	})
+}
+
 func CreateCompany(c *gin.Context) {
 	var req CreateCompanyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -34,6 +75,8 @@ func CreateCompany(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create company"})
 		return
 	}
+
+	seedDefaultRoles(company.ID)
 
 	c.JSON(http.StatusCreated, company)
 }
