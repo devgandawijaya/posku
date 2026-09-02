@@ -2,7 +2,6 @@
 
 import (
 	"fmt"
-	"log"
 	"posku/internal/config"
 	"posku/internal/models"
 
@@ -19,14 +18,11 @@ func Connect() {
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		panic("Failed to connect to database: " + err.Error())
 	}
-
-	log.Println("Database connected successfully")
 }
 
 func Migrate() {
-	// Create enum types for PostgreSQL
 	DB.Exec(`DO $$ BEGIN CREATE TYPE payment_method AS ENUM ('cash','transfer','wallet'); EXCEPTION WHEN duplicate_object THEN null; END $$;`)
 	DB.Exec(`DO $$ BEGIN CREATE TYPE transfer_status AS ENUM ('pending','completed','cancelled'); EXCEPTION WHEN duplicate_object THEN null; END $$;`)
 
@@ -99,17 +95,14 @@ func Migrate() {
 		&models.StockSummaryCache{},
 	)
 	if err != nil {
-		log.Fatal("Failed to migrate database:", err)
+		panic("Failed to migrate database: " + err.Error())
 	}
 
 	seedIntegrationCatalog()
 	seedPlans()
 	SeedSampleData()
-
-	log.Println("Database migrated successfully")
 }
 
-// seedIntegrationCatalog inserts the static provider catalog (docs/integrasi.md) if not present.
 func seedIntegrationCatalog() {
 	apiKeySchema := `[{"key":"api_key","required":true},{"key":"webhook_url","required":false}]`
 	noConfigSchema := `[]`
@@ -128,7 +121,6 @@ func seedIntegrationCatalog() {
 	}
 }
 
-// seedPlans inserts the default subscription plan catalog (docs/subscription-billing.md) if not present.
 func seedPlans() {
 	plans := []models.Plan{
 		{Code: "free", Name: "Free", PriceMonthly: 0, PriceYearly: 0, Features: "{}", IsActive: true, SortOrder: 1},

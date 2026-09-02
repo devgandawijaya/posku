@@ -1,7 +1,6 @@
 ﻿package database
 
 import (
-	"log"
 	"time"
 	"posku/internal/models"
 )
@@ -105,6 +104,4 @@ func SeedSampleData() {
 
 	audit := models.AuditLog{CompanyID: comp.ID, ActorID: empAdmin.ID, ActorName: empAdmin.Name, Action: "user_login", EntityType: "auth", EntityID: 1, EntityName: "login", Diff: `{"status":"success"}`}
 	DB.Create(&audit)
-
-	log.Println("Sample data seeded successfully")
 }
