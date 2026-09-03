@@ -1,4 +1,4 @@
-package routes
+﻿package routes
 
 import (
 	"posku/internal/controllers"
@@ -364,3 +364,4 @@ func SetupRoutes(r *gin.Engine) {
 	r.GET("/billing/coupons/validate", middlewares.AuthRequired(), controllers.ValidateCoupon)
 	r.GET("/billing/usage", middlewares.AuthRequired(), controllers.GetUsage)
 }
+

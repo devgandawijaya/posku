@@ -26,6 +26,33 @@ func Migrate() {
 	DB.Exec(`DO $$ BEGIN CREATE TYPE payment_method AS ENUM ('cash','transfer','wallet'); EXCEPTION WHEN duplicate_object THEN null; END $$;`)
 	DB.Exec(`DO $$ BEGIN CREATE TYPE transfer_status AS ENUM ('pending','completed','cancelled'); EXCEPTION WHEN duplicate_object THEN null; END $$;`)
 
+	// 1. Migrate Company and Role tables first so roles table exists
+	_ = DB.AutoMigrate(&models.Company{}, &models.Role{})
+
+	// 2. Ensure at least one default role exists if roles table is empty
+	var roleCount int64
+	DB.Model(&models.Role{}).Count(&roleCount)
+	if roleCount == 0 {
+		var compCount int64
+		DB.Model(&models.Company{}).Count(&compCount)
+		if compCount == 0 {
+			defaultComp := models.Company{Name: "PT Posku Utama"}
+			DB.Create(&defaultComp)
+		}
+		var firstComp models.Company
+		DB.First(&firstComp)
+		defaultRole := models.Role{CompanyID: firstComp.ID, Name: "admin", Scope: "company", Permissions: `["*"]`}
+		DB.Create(&defaultRole)
+	}
+
+	// 3. Fix any NULL or invalid role_id in existing employees table before adding foreign key constraint
+	DB.Exec(`DO $$ BEGIN
+		IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employees' AND column_name='role_id') THEN
+			UPDATE employees SET role_id = (SELECT id FROM roles ORDER BY id ASC LIMIT 1)
+			WHERE role_id IS NULL OR role_id NOT IN (SELECT id FROM roles);
+		END IF;
+	END $$;`)
+
 	err := DB.AutoMigrate(
 		&models.Company{},
 		&models.Role{},
@@ -128,9 +155,6 @@ func seedPlans() {
 		{Code: "enterprise", Name: "Enterprise", PriceMonthly: 999000, PriceYearly: 9990000, Features: "{\"multi_outlet\":true,\"custom_domain\":true}", IsActive: true, SortOrder: 3},
 	}
 	for _, p := range plans {
-		var existing models.Plan
-		if err := DB.Where("code = ?", p.Code).First(&existing).Error; err != nil {
-			DB.Create(&p)
-		}
+		DB.FirstOrCreate(&p, models.Plan{Code: p.Code})
 	}
 }
