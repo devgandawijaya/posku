@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "POSKU API Collection",
-    "description": "Postman collection for POSKU Go API (Gin + GORM + PostgreSQL). Base URL default http://localhost:2040. Login first to auto-capture {{token}}/{{refresh_token}}.",
+    "description": "Postman collection for POSKU Go API (Gin + GORM + PostgreSQL). Base URL default http://localhost:2040. Every API response uses the v1 envelope: success, version, timestamp, message, data, meta, error, and requestId. Login first to auto-capture {{token}}/{{refresh_token}}.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -132,6 +132,42 @@
       "value": ""
     }
   ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test(\"uses the POSKU API v1 response contract\", function () {",
+          "    const body = pm.response.json();",
+          "    const requiredFields = [\"success\", \"version\", \"timestamp\", \"message\", \"data\", \"meta\", \"error\", \"requestId\"];",
+          "",
+          "    requiredFields.forEach(function (field) {",
+          "        pm.expect(body).to.have.property(field);",
+          "    });",
+          "",
+          "    pm.expect(body.success).to.be.a(\"boolean\");",
+          "    pm.expect(body.version).to.eql(\"v1\");",
+          "    pm.expect(body.timestamp).to.be.a(\"string\");",
+          "    pm.expect(Date.parse(body.timestamp)).not.to.be.NaN;",
+          "    pm.expect(body.message).to.be.a(\"string\");",
+          "    pm.expect(body.requestId).to.match(/^req_[A-Za-z0-9]+$/);",
+          "    pm.expect(pm.response.headers.get(\"X-Request-ID\")).to.eql(body.requestId);",
+          "",
+          "    if (body.success) {",
+          "        pm.expect(body.error).to.equal(null);",
+          "    } else {",
+          "        pm.expect(body.data).to.equal(null);",
+          "        pm.expect(body.meta).to.equal(null);",
+          "        pm.expect(body.error).to.be.an(\"object\");",
+          "        pm.expect(body.error.code).to.match(/^[A-Z_]+$/);",
+          "        pm.expect(body.error).to.have.property(\"details\");",
+          "    }",
+          "});"
+        ]
+      }
+    }
+  ],
   "item": [
     {
       "name": "Home",
@@ -183,7 +219,7 @@
               "mode": "raw",
               "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
             },
-            "url": "{{base_url}}/auth/login"
+"url": "{{base_url}}/auth/login"
           }
         },
         {
