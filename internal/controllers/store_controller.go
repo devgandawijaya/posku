@@ -11,7 +11,7 @@ import (
 )
 
 type CreateStoreRequest struct {
-	CompanyID         uint       `json:"company_id" binding:"required"`
+	CompanyID         uint       `json:"company_id"`
 	Name              string     `json:"name" binding:"required"`
 	Address           string     `json:"address"`
 	Phone             string     `json:"phone"`
@@ -22,7 +22,6 @@ type CreateStoreRequest struct {
 }
 
 type UpdateStoreRequest struct {
-	CompanyID         uint       `json:"company_id" binding:"required"`
 	Name              string     `json:"name" binding:"required"`
 	Address           string     `json:"address"`
 	Phone             string     `json:"phone"`
@@ -36,16 +35,26 @@ type UpdateStoreRequest struct {
 func CreateStore(c *gin.Context) {
 	var req CreateStoreRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	if ok, msg := checkPlanLimit(req.CompanyID, "outlets"); !ok {
-		c.JSON(http.StatusPaymentRequired, gin.H{"error": msg})
+
+	companyID := getAuthCompanyID(c)
+	if companyID == 0 {
+		companyID = req.CompanyID
+	}
+	if companyID == 0 {
+		RespondError(c, http.StatusBadRequest, "company_id is required")
+		return
+	}
+
+	if ok, msg := checkPlanLimit(companyID, "outlets"); !ok {
+		RespondError(c, http.StatusPaymentRequired, msg)
 		return
 	}
 
 	store := models.Store{
-		CompanyID:         req.CompanyID,
+		CompanyID:         companyID,
 		Name:              req.Name,
 		Address:           req.Address,
 		Phone:             req.Phone,
@@ -57,14 +66,14 @@ func CreateStore(c *gin.Context) {
 	}
 
 	if err := database.DB.Create(&store).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create store"})
+		RespondError(c, http.StatusInternalServerError, "Failed to create store")
 		return
 	}
 	store.Code = fmtStoreCode(store.ID)
 	database.DB.Model(&store).Update("code", store.Code)
 
 	logAudit(c, store.CompanyID, "create", "outlet", store.ID, store.Name, nil)
-	c.JSON(http.StatusCreated, store)
+	RespondCreated(c, store, "Store created successfully")
 }
 
 func fmtStoreCode(id uint) string {
@@ -83,13 +92,21 @@ func padNumber(id uint) string {
 }
 
 func GetStores(c *gin.Context) {
+	companyID := getAuthCompanyID(c)
 	var stores []models.Store
 	q := database.DB.Preload("Company")
-	if companyID := c.Query("company_id"); companyID != "" {
+
+	if companyID > 0 {
 		q = q.Where("company_id = ?", companyID)
+	} else if qCID := c.Query("company_id"); qCID != "" {
+		q = q.Where("company_id = ?", qCID)
 	}
+
 	if status := c.Query("status"); status != "" {
 		q = q.Where("status = ?", status)
+	}
+	if search := c.Query("q"); search != "" {
+		q = q.Where("name ILIKE ? OR code ILIKE ? OR address ILIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%")
 	}
 	if hasTrx := c.Query("hasTrx"); hasTrx != "" {
 		sub := database.DB.Model(&models.SalesTransaction{}).Select("DISTINCT store_id")
@@ -99,8 +116,21 @@ func GetStores(c *gin.Context) {
 			q = q.Where("id NOT IN (?)", sub)
 		}
 	}
-	if err := q.Find(&stores).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch stores"})
+
+	if c.Query("page") != "" || c.Query("per_page") != "" {
+		var total int64
+		q.Count(&total)
+		page, perPage, offset := GetPagination(c)
+		if err := q.Order("id asc").Limit(perPage).Offset(offset).Find(&stores).Error; err != nil {
+			RespondError(c, http.StatusInternalServerError, "Failed to fetch stores")
+			return
+		}
+		RespondPaginated(c, stores, page, perPage, total)
+		return
+	}
+
+	if err := q.Order("id asc").Find(&stores).Error; err != nil {
+		RespondError(c, http.StatusInternalServerError, "Failed to fetch stores")
 		return
 	}
 	c.JSON(http.StatusOK, stores)
@@ -108,31 +138,42 @@ func GetStores(c *gin.Context) {
 
 func GetStore(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var store models.Store
-	if err := database.DB.Preload("Company").First(&store, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+	q := database.DB.Preload("Company")
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&store, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Store not found")
 		return
 	}
-	c.JSON(http.StatusOK, store)
+	RespondSuccess(c, store)
 }
 
 func UpdateStore(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var store models.Store
-	if err := database.DB.First(&store, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&store, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Store not found")
 		return
 	}
 
 	var input UpdateStoreRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	store.Name = input.Name
 	store.Address = input.Address
-	store.CompanyID = input.CompanyID
 	store.Phone = input.Phone
 	store.ManagerEmployeeID = input.ManagerEmployeeID
 	store.ManagerName = input.ManagerName
@@ -143,22 +184,29 @@ func UpdateStore(c *gin.Context) {
 	}
 
 	if err := database.DB.Save(&store).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update store"})
+		RespondError(c, http.StatusInternalServerError, "Failed to update store")
 		return
 	}
 
 	logAudit(c, store.CompanyID, "update", "outlet", store.ID, store.Name, nil)
-	c.JSON(http.StatusOK, store)
+	RespondSuccess(c, store, "Store updated successfully")
 }
 
 // ToggleStoreStatus implements docs/outlet.md POST /outlets/:id/toggle-status
 func ToggleStoreStatus(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var store models.Store
-	if err := database.DB.First(&store, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&store, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Store not found")
 		return
 	}
+
 	if store.Status == "aktif" {
 		store.Status = "nonaktif"
 	} else {
@@ -166,15 +214,21 @@ func ToggleStoreStatus(c *gin.Context) {
 	}
 	database.DB.Save(&store)
 	logAudit(c, store.CompanyID, "toggle", "outlet", store.ID, store.Name, nil)
-	c.JSON(http.StatusOK, store)
+	RespondSuccess(c, store, "Store status toggled")
 }
 
 // GetStoreMetrics implements docs/outlet.md GET /outlets/:id/metrics
 func GetStoreMetrics(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var store models.Store
-	if err := database.DB.First(&store, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&store, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Store not found")
 		return
 	}
 
@@ -199,12 +253,11 @@ func GetStoreMetrics(c *gin.Context) {
 }
 
 // RefreshOutletMetricsCache recomputes and persists docs/outlet.md outlet_metrics_cache.
-// In production this would be invoked by a scheduler; exposed here as a manual trigger.
 func RefreshOutletMetricsCache(c *gin.Context) {
 	id := c.Param("id")
 	var store models.Store
 	if err := database.DB.First(&store, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+		RespondError(c, http.StatusNotFound, "Store not found")
 		return
 	}
 	var totalSales float64
@@ -224,19 +277,25 @@ func RefreshOutletMetricsCache(c *gin.Context) {
 		LastTransactionAt: lastAt, EmployeeCount: employeeCount, UpdatedAt: time.Now(),
 	}
 	database.DB.Save(&cache)
-	c.JSON(http.StatusOK, cache)
+	RespondSuccess(c, cache, "Outlet metrics cache refreshed")
 }
 
 func DeleteStore(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var store models.Store
-	if err := database.DB.First(&store, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&store, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Store not found")
 		return
 	}
 
 	if err := database.DB.Delete(&store).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete store"})
+		RespondError(c, http.StatusInternalServerError, "Failed to delete store")
 		return
 	}
 
@@ -247,7 +306,7 @@ func GetStoresByCompany(c *gin.Context) {
 	companyID := c.Param("company_id")
 	var stores []models.Store
 	if err := database.DB.Where("company_id = ?", companyID).Find(&stores).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch stores"})
+		RespondError(c, http.StatusInternalServerError, "Failed to fetch stores")
 		return
 	}
 	c.JSON(http.StatusOK, stores)
@@ -255,15 +314,19 @@ func GetStoresByCompany(c *gin.Context) {
 
 // GetStoreOptions implements docs/outlet.md GET /outlets/options (dropdown {id, name}).
 func GetStoreOptions(c *gin.Context) {
+	companyID := getAuthCompanyID(c)
 	type option struct {
 		ID   uint   `json:"id"`
 		Name string `json:"name"`
+		Code string `json:"code"`
 	}
 	var list []option
-	q := database.DB.Model(&models.Store{})
-	if companyID := c.Query("company_id"); companyID != "" {
+	q := database.DB.Model(&models.Store{}).Where("status = 'aktif'")
+	if companyID > 0 {
 		q = q.Where("company_id = ?", companyID)
+	} else if qCID := c.Query("company_id"); qCID != "" {
+		q = q.Where("company_id = ?", qCID)
 	}
-	q.Select("id, name").Find(&list)
+	q.Select("id, name, code").Find(&list)
 	c.JSON(http.StatusOK, list)
 }

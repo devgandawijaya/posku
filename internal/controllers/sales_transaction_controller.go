@@ -19,8 +19,10 @@ type SalesItemInput struct {
 }
 
 type PaymentInput struct {
-	Method          string  `json:"method" binding:"required,oneof=cash transfer wallet"`
+	Method          string  `json:"method" binding:"required"`
 	Amount          float64 `json:"amount" binding:"required,gt=0"`
+	CashReceived    float64 `json:"cash_received"`
+	Change          float64 `json:"change"`
 	ReferenceNumber string  `json:"reference_number"`
 }
 
@@ -32,6 +34,7 @@ type CreateSalesTransactionRequest struct {
 	TotalAmount float64          `json:"total_amount" binding:"required,gt=0"`
 	Items       []SalesItemInput `json:"items" binding:"required,dive,required"`
 	Payment     *PaymentInput    `json:"payment"`
+	Payments    []PaymentInput   `json:"payments"`
 }
 
 func CreateSalesTransaction(c *gin.Context) {
@@ -42,14 +45,34 @@ func CreateSalesTransaction(c *gin.Context) {
 
 	var req CreateSalesTransactionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
+	companyID := getAuthCompanyID(c)
 	var store models.Store
 	if err := database.DB.First(&store, req.StoreID).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "store not found"})
+		RespondError(c, http.StatusBadRequest, "store not found")
 		return
+	}
+	if companyID > 0 && store.CompanyID != companyID {
+		RespondError(c, http.StatusForbidden, "store does not belong to authorized company")
+		return
+	}
+
+	// Consolidate payment list
+	var paymentsToProcess []PaymentInput
+	if len(req.Payments) > 0 {
+		paymentsToProcess = req.Payments
+	} else if req.Payment != nil {
+		paymentsToProcess = append(paymentsToProcess, *req.Payment)
+	}
+
+	primaryMethod := "cash"
+	if len(paymentsToProcess) == 1 {
+		primaryMethod = paymentsToProcess[0].Method
+	} else if len(paymentsToProcess) > 1 {
+		primaryMethod = "split"
 	}
 
 	tx := database.DB.Begin()
@@ -57,26 +80,29 @@ func CreateSalesTransaction(c *gin.Context) {
 	// find warehouse for store
 	var wh models.Warehouse
 	if err := tx.Where("store_id = ?", req.StoreID).First(&wh).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"error": "warehouse not found for store"})
-		return
+		if err2 := tx.Where("company_id = ?", store.CompanyID).First(&wh).Error; err2 != nil {
+			tx.Rollback()
+			RespondError(c, http.StatusBadRequest, "warehouse not found for store")
+			return
+		}
 	}
 
 	st := models.SalesTransaction{
-		CompanyID:   store.CompanyID,
-		StoreID:     req.StoreID,
-		ShiftID:     req.ShiftID,
-		EmployeeID:  req.EmployeeID,
-		CustomerID:  req.CustomerID,
-		TotalAmount: req.TotalAmount,
-		Subtotal:    req.TotalAmount,
-		Status:      "lunas",
-		SyncStatus:  "synced",
+		CompanyID:     store.CompanyID,
+		StoreID:       req.StoreID,
+		ShiftID:       req.ShiftID,
+		EmployeeID:    req.EmployeeID,
+		CustomerID:    req.CustomerID,
+		TotalAmount:   req.TotalAmount,
+		Subtotal:      req.TotalAmount,
+		PaymentMethod: primaryMethod,
+		Status:        "lunas",
+		SyncStatus:    "synced",
 	}
 
 	if err := tx.Create(&st).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create sales transaction"})
+		RespondError(c, http.StatusInternalServerError, "Failed to create sales transaction")
 		return
 	}
 	st.InvoiceNo = fmt.Sprintf("INV-%06d", st.ID)
@@ -88,24 +114,24 @@ func CreateSalesTransaction(c *gin.Context) {
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("warehouse_id = ? AND product_id = ?", wh.ID, it.ProductID).First(&stock).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				tx.Rollback()
-				c.JSON(http.StatusBadRequest, gin.H{"error": "stock not found for product in warehouse"})
+				RespondError(c, http.StatusBadRequest, "stock not found for product in warehouse")
 				return
 			}
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch stock"})
+			RespondError(c, http.StatusInternalServerError, "failed to fetch stock")
 			return
 		}
 
 		if stock.Quantity < it.Quantity {
 			tx.Rollback()
-			c.JSON(http.StatusBadRequest, gin.H{"error": "insufficient stock"})
+			RespondError(c, http.StatusBadRequest, "insufficient stock")
 			return
 		}
 
 		stock.Quantity -= it.Quantity
 		if err := tx.Save(&stock).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update stock"})
+			RespondError(c, http.StatusInternalServerError, "failed to update stock")
 			return
 		}
 		tx.Create(&models.StockMovement{
@@ -128,22 +154,28 @@ func CreateSalesTransaction(c *gin.Context) {
 		}
 		if err := tx.Create(&si).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create sales item"})
+			RespondError(c, http.StatusInternalServerError, "Failed to create sales item")
 			return
 		}
 	}
 
-	// payment if present
-	if req.Payment != nil {
-		p := models.Payment{
-			SalesTransactionID: st.ID,
-			Method:             req.Payment.Method,
-			Amount:             req.Payment.Amount,
-			ReferenceNumber:    req.Payment.ReferenceNumber,
+	// record payments (supporting split payments!)
+	for _, p := range paymentsToProcess {
+		change := p.Change
+		if p.Method == "cash" && p.CashReceived > p.Amount && change == 0 {
+			change = p.CashReceived - p.Amount
 		}
-		if err := tx.Create(&p).Error; err != nil {
+		payRecord := models.Payment{
+			SalesTransactionID: st.ID,
+			Method:             p.Method,
+			Amount:             p.Amount,
+			CashReceived:       p.CashReceived,
+			Change:             change,
+			ReferenceNumber:    p.ReferenceNumber,
+		}
+		if err := tx.Create(&payRecord).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create payment"})
+			RespondError(c, http.StatusInternalServerError, "Failed to create payment: "+err.Error())
 			return
 		}
 	}
@@ -151,24 +183,42 @@ func CreateSalesTransaction(c *gin.Context) {
 	tx.Commit()
 
 	var created models.SalesTransaction
-	if err := database.DB.Preload("SalesItems").Preload("Payment").First(&created, st.ID).Error; err != nil {
+	if err := database.DB.Preload("SalesItems").Preload("Payments").Preload("Payment").First(&created, st.ID).Error; err != nil {
 		c.JSON(http.StatusOK, st)
 		return
 	}
 	idempotencySave(c, "sales.create", created)
 	incrementTransactionQuota(created.CompanyID)
 	dispatchWebhookEvent(created.CompanyID, "sale.created", created)
-	c.JSON(http.StatusCreated, created)
+	RespondCreated(c, created, "Sales transaction created successfully")
 }
 
 func GetSalesTransactions(c *gin.Context) {
-	var list []models.SalesTransaction
-	q := database.DB.Preload("SalesItems").Preload("Payment")
-	if companyID := c.Query("company_id"); companyID != "" {
+	companyID := getAuthCompanyID(c)
+	q := database.DB.Model(&models.SalesTransaction{}).
+		Preload("SalesItems").
+		Preload("Payments").
+		Preload("Payment").
+		Preload("Store").
+		Preload("Employee")
+
+	if companyID > 0 {
 		q = q.Where("company_id = ?", companyID)
+	} else if qCID := c.Query("company_id"); qCID != "" {
+		q = q.Where("company_id = ?", qCID)
 	}
+
 	if storeID := c.Query("store_id"); storeID != "" {
 		q = q.Where("store_id = ?", storeID)
+	}
+	if employeeID := c.Query("employee_id"); employeeID != "" {
+		q = q.Where("employee_id = ?", employeeID)
+	}
+	if shiftID := c.Query("shift_id"); shiftID != "" {
+		q = q.Where("shift_id = ?", shiftID)
+	}
+	if customerID := c.Query("customer_id"); customerID != "" {
+		q = q.Where("customer_id = ?", customerID)
 	}
 	if status := c.Query("status"); status != "" {
 		q = q.Where("status = ?", status)
@@ -182,8 +232,24 @@ func GetSalesTransactions(c *gin.Context) {
 	if dateTo := c.Query("date_to"); dateTo != "" {
 		q = q.Where("transaction_date <= ?", dateTo)
 	}
+
+	// Pagination
+	if c.Query("page") != "" || c.Query("per_page") != "" {
+		var total int64
+		q.Count(&total)
+		page, perPage, offset := GetPagination(c)
+		var list []models.SalesTransaction
+		if err := q.Order("transaction_date desc").Limit(perPage).Offset(offset).Find(&list).Error; err != nil {
+			RespondError(c, http.StatusInternalServerError, "Failed to fetch sales transactions")
+			return
+		}
+		RespondPaginated(c, list, page, perPage, total)
+		return
+	}
+
+	var list []models.SalesTransaction
 	if err := q.Order("transaction_date desc").Find(&list).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch sales transactions"})
+		RespondError(c, http.StatusInternalServerError, "Failed to fetch sales transactions")
 		return
 	}
 	c.JSON(http.StatusOK, list)
@@ -191,24 +257,43 @@ func GetSalesTransactions(c *gin.Context) {
 
 func GetSalesTransaction(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var st models.SalesTransaction
-	if err := database.DB.Preload("SalesItems").Preload("Payment").First(&st, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Sales transaction not found"})
+	q := database.DB.Preload("SalesItems.Product").
+		Preload("Payments").
+		Preload("Payment").
+		Preload("Store").
+		Preload("Employee").
+		Preload("Customer")
+
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+
+	if err := q.First(&st, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Sales transaction not found")
 		return
 	}
-	c.JSON(http.StatusOK, st)
+	RespondSuccess(c, st)
 }
 
 func DeleteSalesTransaction(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var st models.SalesTransaction
-	if err := database.DB.First(&st, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Sales transaction not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&st, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Sales transaction not found")
 		return
 	}
 
 	if err := database.DB.Delete(&st).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete sales transaction"})
+		RespondError(c, http.StatusInternalServerError, "Failed to delete sales transaction")
 		return
 	}
 
@@ -220,11 +305,11 @@ func VoidSalesTransaction(c *gin.Context) {
 	id := c.Param("id")
 	var st models.SalesTransaction
 	if err := database.DB.First(&st, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Sales transaction not found"})
+		RespondError(c, http.StatusNotFound, "Sales transaction not found")
 		return
 	}
 	if st.Status == "void" {
-		c.JSON(http.StatusConflict, gin.H{"error": "transaksi sudah void"})
+		RespondError(c, http.StatusConflict, "transaksi sudah void")
 		return
 	}
 	st.Status = "void"
@@ -232,7 +317,7 @@ func VoidSalesTransaction(c *gin.Context) {
 	logAudit(c, st.CompanyID, "void", "sale", st.ID, st.InvoiceNo, nil)
 	actorID, _ := currentEmployeeID(c)
 	database.DB.Create(&models.SaleAudit{SaleID: st.ID, ActorID: actorID, Action: "void", Kind: "danger"})
-	c.JSON(http.StatusOK, st)
+	RespondSuccess(c, st, "Transaction voided successfully")
 }
 
 type RefundSalesRequest struct {
@@ -245,12 +330,12 @@ func RefundSalesTransaction(c *gin.Context) {
 	id := c.Param("id")
 	var st models.SalesTransaction
 	if err := database.DB.First(&st, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Sales transaction not found"})
+		RespondError(c, http.StatusNotFound, "Sales transaction not found")
 		return
 	}
 	var req RefundSalesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	st.Status = "refund"
@@ -259,7 +344,7 @@ func RefundSalesTransaction(c *gin.Context) {
 	actorID, _ := currentEmployeeID(c)
 	database.DB.Create(&models.SaleRefund{SaleID: st.ID, Amount: req.Amount, Reason: req.Reason, ByUserID: actorID})
 	database.DB.Create(&models.SaleAudit{SaleID: st.ID, ActorID: actorID, Action: "refund", Detail: req.Reason, Kind: "warning"})
-	c.JSON(http.StatusOK, st)
+	RespondSuccess(c, st, "Transaction refunded successfully")
 }
 
 // SyncSalesTransaction implements docs/transaksi.md POST /sales/:id/sync (offline POS sync).
@@ -267,13 +352,13 @@ func SyncSalesTransaction(c *gin.Context) {
 	id := c.Param("id")
 	var st models.SalesTransaction
 	if err := database.DB.First(&st, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Sales transaction not found"})
+		RespondError(c, http.StatusNotFound, "Sales transaction not found")
 		return
 	}
 	st.SyncStatus = "synced"
 	database.DB.Save(&st)
 	database.DB.Create(&models.SaleAudit{SaleID: st.ID, Action: "sync", Kind: "info"})
-	c.JSON(http.StatusOK, st)
+	RespondSuccess(c, st)
 }
 
 // ExportSalesTransactions implements docs/transaksi.md GET /sales/export
@@ -292,13 +377,12 @@ func ExportSalesTransactions(c *gin.Context) {
 	writeCSV(c, "sales.csv", []string{"invoice_no", "date", "store_id", "total", "payment_method", "status"}, rows)
 }
 
-// PrintSalesTransaction implements docs/kasir.md POST /sales/:id/print. Returns a structured receipt
-// payload for the client to render/print (no physical printer/PDF integration).
+// PrintSalesTransaction implements docs/kasir.md POST /sales/:id/print. Returns structured receipt.
 func PrintSalesTransaction(c *gin.Context) {
 	id := c.Param("id")
 	var st models.SalesTransaction
-	if err := database.DB.Preload("SalesItems.Product").Preload("Payment").Preload("Store").First(&st, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Sales transaction not found"})
+	if err := database.DB.Preload("SalesItems.Product").Preload("Payments").Preload("Payment").Preload("Store").First(&st, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Sales transaction not found")
 		return
 	}
 	database.DB.Create(&models.SaleAudit{SaleID: st.ID, Action: "print", Kind: "info"})
@@ -312,6 +396,7 @@ func PrintSalesTransaction(c *gin.Context) {
 		"tax":        st.Tax,
 		"total":      st.TotalAmount,
 		"payment":    st.PaymentMethod,
+		"payments":   st.Payments,
 	})
 }
 

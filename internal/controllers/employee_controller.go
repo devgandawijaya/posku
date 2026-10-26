@@ -83,17 +83,26 @@ func CreateEmployee(c *gin.Context) {
 		return
 	}
 
+	companyID := getAuthCompanyID(c)
+	if companyID == 0 {
+		companyID = req.CompanyID
+	}
+	if companyID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "company_id is required"})
+		return
+	}
+
 	var company models.Company
-	if err := database.DB.First(&company, req.CompanyID).Error; err != nil {
+	if err := database.DB.First(&company, companyID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "company not found"})
 		return
 	}
-	if ok, msg := checkPlanLimit(req.CompanyID, "users"); !ok {
+	if ok, msg := checkPlanLimit(companyID, "users"); !ok {
 		c.JSON(http.StatusPaymentRequired, gin.H{"error": msg})
 		return
 	}
 
-	role, err := validateRoleAndStores(req.CompanyID, req.RoleID, req.StoreIDs)
+	role, err := validateRoleAndStores(companyID, req.RoleID, req.StoreIDs)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "role not found or not owned by company"})
 		return
@@ -140,10 +149,13 @@ func CreateEmployee(c *gin.Context) {
 }
 
 func GetEmployees(c *gin.Context) {
+	companyID := getAuthCompanyID(c)
 	var list []models.Employee
-	q := database.DB.Preload("Company").Preload("Role")
-	if companyID := c.Query("company_id"); companyID != "" {
+	q := database.DB.Preload("Company").Preload("Role").Preload("Store")
+	if companyID > 0 {
 		q = q.Where("company_id = ?", companyID)
+	} else if qCID := c.Query("company_id"); qCID != "" {
+		q = q.Where("company_id = ?", qCID)
 	}
 	if roleID := c.Query("role_id"); roleID != "" {
 		q = q.Where("role_id = ?", roleID)
@@ -154,7 +166,23 @@ func GetEmployees(c *gin.Context) {
 	if search := c.Query("q"); search != "" {
 		q = q.Where("name ILIKE ? OR username ILIKE ? OR email ILIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%")
 	}
-	if err := q.Find(&list).Error; err != nil {
+
+	if c.Query("page") != "" || c.Query("per_page") != "" {
+		var total int64
+		q.Count(&total)
+		page, perPage, offset := GetPagination(c)
+		if err := q.Order("id asc").Limit(perPage).Offset(offset).Find(&list).Error; err != nil {
+			RespondError(c, http.StatusInternalServerError, "Failed to fetch employees")
+			return
+		}
+		for i := range list {
+			list[i].Password = ""
+		}
+		RespondPaginated(c, list, page, perPage, total)
+		return
+	}
+
+	if err := q.Order("id asc").Find(&list).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch employees"})
 		return
 	}

@@ -11,7 +11,7 @@ import (
 )
 
 type CreateSupplierRequest struct {
-	CompanyID     uint   `json:"company_id" binding:"required"`
+	CompanyID     uint   `json:"company_id"`
 	Name          string `json:"name" binding:"required"`
 	ContactPerson string `json:"contact_person"`
 	Phone         string `json:"phone"`
@@ -35,11 +35,21 @@ type UpdateSupplierRequest struct {
 func CreateSupplier(c *gin.Context) {
 	var req CreateSupplierRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
+
+	companyID := getAuthCompanyID(c)
+	if companyID == 0 {
+		companyID = req.CompanyID
+	}
+	if companyID == 0 {
+		RespondError(c, http.StatusBadRequest, "company_id is required")
+		return
+	}
+
 	sup := models.Supplier{
-		CompanyID:     req.CompanyID,
+		CompanyID:     companyID,
 		Name:          req.Name,
 		ContactPerson: req.ContactPerson,
 		Phone:         req.Phone,
@@ -50,29 +60,47 @@ func CreateSupplier(c *gin.Context) {
 		Status:        "aktif",
 	}
 	if err := database.DB.Create(&sup).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create supplier"})
+		RespondError(c, http.StatusInternalServerError, "Failed to create supplier")
 		return
 	}
 	sup.Code = "SUP" + padNumber(sup.ID+1000)
 	database.DB.Model(&sup).Update("code", sup.Code)
 	logAudit(c, sup.CompanyID, "create", "supplier", sup.ID, sup.Name, nil)
-	c.JSON(http.StatusCreated, sup)
+	RespondCreated(c, sup, "Supplier created successfully")
 }
 
 func GetSuppliers(c *gin.Context) {
+	companyID := getAuthCompanyID(c)
 	var list []models.Supplier
 	q := database.DB.Model(&models.Supplier{})
-	if companyID := c.Query("company_id"); companyID != "" {
+
+	if companyID > 0 {
 		q = q.Where("company_id = ?", companyID)
+	} else if qCID := c.Query("company_id"); qCID != "" {
+		q = q.Where("company_id = ?", qCID)
 	}
+
 	if status := c.Query("status"); status != "" {
 		q = q.Where("status = ?", status)
 	}
 	if search := c.Query("q"); search != "" {
-		q = q.Where("name ILIKE ?", "%"+search+"%")
+		q = q.Where("name ILIKE ? OR code ILIKE ? OR contact_person ILIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%")
 	}
-	if err := q.Find(&list).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch suppliers"})
+
+	if c.Query("page") != "" || c.Query("per_page") != "" {
+		var total int64
+		q.Count(&total)
+		page, perPage, offset := GetPagination(c)
+		if err := q.Order("id asc").Limit(perPage).Offset(offset).Find(&list).Error; err != nil {
+			RespondError(c, http.StatusInternalServerError, "Failed to fetch suppliers")
+			return
+		}
+		RespondPaginated(c, list, page, perPage, total)
+		return
+	}
+
+	if err := q.Order("id asc").Find(&list).Error; err != nil {
+		RespondError(c, http.StatusInternalServerError, "Failed to fetch suppliers")
 		return
 	}
 	c.JSON(http.StatusOK, list)
@@ -80,26 +108,39 @@ func GetSuppliers(c *gin.Context) {
 
 func GetSupplier(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var sup models.Supplier
-	if err := database.DB.First(&sup, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Supplier not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&sup, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Supplier not found")
 		return
 	}
-	c.JSON(http.StatusOK, sup)
+	RespondSuccess(c, sup)
 }
 
 func UpdateSupplier(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var sup models.Supplier
-	if err := database.DB.First(&sup, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Supplier not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&sup, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Supplier not found")
 		return
 	}
 	var req UpdateSupplierRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
+
 	sup.Name = req.Name
 	sup.ContactPerson = req.ContactPerson
 	sup.Phone = req.Phone
@@ -112,32 +153,49 @@ func UpdateSupplier(c *gin.Context) {
 	if req.Status != "" {
 		sup.Status = req.Status
 	}
-	database.DB.Save(&sup)
+
+	if err := database.DB.Save(&sup).Error; err != nil {
+		RespondError(c, http.StatusInternalServerError, "Failed to update supplier")
+		return
+	}
 	logAudit(c, sup.CompanyID, "update", "supplier", sup.ID, sup.Name, nil)
-	c.JSON(http.StatusOK, sup)
+	RespondSuccess(c, sup, "Supplier updated successfully")
 }
 
 func DeleteSupplier(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var sup models.Supplier
-	if err := database.DB.First(&sup, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Supplier not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&sup, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Supplier not found")
 		return
 	}
-	if sup.TotalPurchases > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "tidak bisa hapus supplier dengan histori pembelian"})
+
+	if err := database.DB.Delete(&sup).Error; err != nil {
+		RespondError(c, http.StatusInternalServerError, "Failed to delete supplier")
 		return
 	}
-	database.DB.Delete(&sup)
 	logAudit(c, sup.CompanyID, "delete", "supplier", sup.ID, sup.Name, nil)
 	c.JSON(http.StatusOK, gin.H{"message": "Supplier deleted"})
 }
 
+// ToggleSupplierStatus implements docs/supplier.md POST /suppliers/:id/toggle-status
 func ToggleSupplierStatus(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var sup models.Supplier
-	if err := database.DB.First(&sup, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Supplier not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&sup, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Supplier not found")
 		return
 	}
 	if sup.Status == "aktif" {
@@ -147,33 +205,41 @@ func ToggleSupplierStatus(c *gin.Context) {
 	}
 	database.DB.Save(&sup)
 	logAudit(c, sup.CompanyID, "toggle", "supplier", sup.ID, sup.Name, nil)
-	c.JSON(http.StatusOK, sup)
+	RespondSuccess(c, sup, "Supplier status toggled")
 }
 
 type AssignSupplierOutletsRequest struct {
 	StoreIDs []uint `json:"store_ids" binding:"required"`
 }
 
+// AssignSupplierOutlets implements docs/supplier.md POST /suppliers/:id/assign-outlets
 func AssignSupplierOutlets(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var sup models.Supplier
-	if err := database.DB.First(&sup, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Supplier not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&sup, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Supplier not found")
 		return
 	}
 	var req AssignSupplierOutletsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	sup.StoreIDs = encodeIDs(req.StoreIDs)
 	database.DB.Save(&sup)
 	logAudit(c, sup.CompanyID, "assign", "supplier", sup.ID, sup.Name, req.StoreIDs)
-	c.JSON(http.StatusOK, sup)
+	RespondSuccess(c, sup, "Supplier outlets assigned")
 }
 
 // GetSupplierOptions implements docs/supplier.md GET /suppliers/options.
 func GetSupplierOptions(c *gin.Context) {
+	companyID := getAuthCompanyID(c)
 	type option struct {
 		ID   uint   `json:"id"`
 		Name string `json:"name"`
@@ -181,8 +247,10 @@ func GetSupplierOptions(c *gin.Context) {
 	}
 	var list []option
 	q := database.DB.Model(&models.Supplier{}).Where("status = 'aktif'")
-	if companyID := c.Query("company_id"); companyID != "" {
+	if companyID > 0 {
 		q = q.Where("company_id = ?", companyID)
+	} else if qCID := c.Query("company_id"); qCID != "" {
+		q = q.Where("company_id = ?", qCID)
 	}
 	q.Select("id, name, code").Find(&list)
 	c.JSON(http.StatusOK, list)
@@ -193,18 +261,17 @@ type RecordSupplierPurchaseRequest struct {
 	Note   string  `json:"note"`
 }
 
-// RecordSupplierPurchase implements docs/supplier.md supplier_metrics_cache driver (minimal purchase
-// record, since there is no full purchase-order module yet).
+// RecordSupplierPurchase implements docs/supplier.md supplier_metrics_cache driver
 func RecordSupplierPurchase(c *gin.Context) {
 	id := c.Param("id")
 	var sup models.Supplier
 	if err := database.DB.First(&sup, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Supplier not found"})
+		RespondError(c, http.StatusNotFound, "Supplier not found")
 		return
 	}
 	var req RecordSupplierPurchaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	database.DB.Create(&models.SupplierPurchase{SupplierID: sup.ID, Amount: req.Amount, Note: req.Note})
@@ -215,7 +282,7 @@ func RecordSupplierPurchase(c *gin.Context) {
 	database.DB.Save(&sup)
 
 	var productCount int64
-	database.DB.Model(&models.Product{}).Count(&productCount)
+	database.DB.Model(&models.Product{}).Where("company_id = ?", sup.CompanyID).Count(&productCount)
 	cache := models.SupplierMetricsCache{
 		SupplierID: sup.ID, TotalProducts: productCount, TotalPurchases: sup.TotalPurchases,
 		LastOrderAt: sup.LastOrderAt, UpdatedAt: now,

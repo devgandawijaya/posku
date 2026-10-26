@@ -74,19 +74,28 @@ func CreateRole(c *gin.Context) {
 		return
 	}
 
+	companyID := getAuthCompanyID(c)
+	if companyID == 0 {
+		companyID = req.CompanyID
+	}
+	if companyID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "company_id is required"})
+		return
+	}
+
 	if req.Scope == "store" && len(req.StoreIDs) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "storeIds wajib diisi minimal 1 untuk scope store"})
 		return
 	}
 
 	var company models.Company
-	if err := database.DB.First(&company, req.CompanyID).Error; err != nil {
+	if err := database.DB.First(&company, companyID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "company not found"})
 		return
 	}
 
 	role := models.Role{
-		CompanyID:   req.CompanyID,
+		CompanyID:   companyID,
 		Name:        req.Name,
 		Description: req.Description,
 		Scope:       req.Scope,
@@ -105,10 +114,13 @@ func CreateRole(c *gin.Context) {
 }
 
 func GetRoles(c *gin.Context) {
+	companyID := getAuthCompanyID(c)
 	var list []models.Role
 	q := database.DB.Model(&models.Role{})
-	if companyID := c.Query("company_id"); companyID != "" {
+	if companyID > 0 {
 		q = q.Where("company_id = ?", companyID)
+	} else if qCID := c.Query("company_id"); qCID != "" {
+		q = q.Where("company_id = ?", qCID)
 	}
 	if status := c.Query("status"); status != "" {
 		q = q.Where("status = ?", status)
@@ -119,6 +131,19 @@ func GetRoles(c *gin.Context) {
 	if search := c.Query("q"); search != "" {
 		q = q.Where("name ILIKE ?", "%"+search+"%")
 	}
+
+	if c.Query("page") != "" || c.Query("per_page") != "" {
+		var total int64
+		q.Count(&total)
+		page, perPage, offset := GetPagination(c)
+		if err := q.Order("id asc").Limit(perPage).Offset(offset).Find(&list).Error; err != nil {
+			RespondError(c, http.StatusInternalServerError, "Failed to fetch roles")
+			return
+		}
+		RespondPaginated(c, list, page, perPage, total)
+		return
+	}
+
 	if err := q.Find(&list).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch roles"})
 		return

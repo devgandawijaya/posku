@@ -11,7 +11,7 @@ import (
 )
 
 type CreateCategoryRequest struct {
-	CompanyID uint   `json:"company_id" binding:"required"`
+	CompanyID uint   `json:"company_id"`
 	ParentID  *uint  `json:"parent_id"`
 	Code      string `json:"code"`
 	Name      string `json:"name" binding:"required"`
@@ -38,11 +38,21 @@ type UpdateCategoryRequest struct {
 func CreateCategory(c *gin.Context) {
 	var req CreateCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
+
+	companyID := getAuthCompanyID(c)
+	if companyID == 0 {
+		companyID = req.CompanyID
+	}
+	if companyID == 0 {
+		RespondError(c, http.StatusBadRequest, "company_id is required")
+		return
+	}
+
 	if req.Scope == "specific" && len(req.StoreIDs) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "storeIds wajib diisi untuk scope specific"})
+		RespondError(c, http.StatusBadRequest, "storeIds wajib diisi untuk scope specific")
 		return
 	}
 	isActive := true
@@ -51,7 +61,7 @@ func CreateCategory(c *gin.Context) {
 	}
 
 	cat := models.Category{
-		CompanyID: req.CompanyID,
+		CompanyID: companyID,
 		ParentID:  req.ParentID,
 		Code:      req.Code,
 		Name:      req.Name,
@@ -63,19 +73,24 @@ func CreateCategory(c *gin.Context) {
 		SortOrder: req.SortOrder,
 	}
 	if err := database.DB.Create(&cat).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create category"})
+		RespondError(c, http.StatusInternalServerError, "Failed to create category")
 		return
 	}
 	logAudit(c, cat.CompanyID, "category_create", "category", cat.ID, cat.Name, nil)
-	c.JSON(http.StatusCreated, cat)
+	RespondCreated(c, cat, "Category created successfully")
 }
 
 func GetCategories(c *gin.Context) {
+	companyID := getAuthCompanyID(c)
 	var list []models.Category
 	q := database.DB.Model(&models.Category{})
-	if companyID := c.Query("company_id"); companyID != "" {
+
+	if companyID > 0 {
 		q = q.Where("company_id = ?", companyID)
+	} else if qCID := c.Query("company_id"); qCID != "" {
+		q = q.Where("company_id = ?", qCID)
 	}
+
 	if parentID := c.Query("parent_id"); parentID != "" {
 		q = q.Where("parent_id = ?", parentID)
 	}
@@ -87,8 +102,21 @@ func GetCategories(c *gin.Context) {
 	if search := c.Query("q"); search != "" {
 		q = q.Where("name ILIKE ?", "%"+search+"%")
 	}
-	if err := q.Find(&list).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
+
+	if c.Query("page") != "" || c.Query("per_page") != "" {
+		var total int64
+		q.Count(&total)
+		page, perPage, offset := GetPagination(c)
+		if err := q.Order("sort_order asc, id asc").Limit(perPage).Offset(offset).Find(&list).Error; err != nil {
+			RespondError(c, http.StatusInternalServerError, "Failed to fetch categories")
+			return
+		}
+		RespondPaginated(c, list, page, perPage, total)
+		return
+	}
+
+	if err := q.Order("sort_order asc, id asc").Find(&list).Error; err != nil {
+		RespondError(c, http.StatusInternalServerError, "Failed to fetch categories")
 		return
 	}
 	c.JSON(http.StatusOK, list)
@@ -96,28 +124,41 @@ func GetCategories(c *gin.Context) {
 
 func GetCategory(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var cat models.Category
-	if err := database.DB.First(&cat, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&cat, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Category not found")
 		return
 	}
-	c.JSON(http.StatusOK, cat)
+	RespondSuccess(c, cat)
 }
 
 func UpdateCategory(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var cat models.Category
-	if err := database.DB.First(&cat, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&cat, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Category not found")
 		return
 	}
+
 	var req UpdateCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	if req.Scope == "specific" && len(req.StoreIDs) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "storeIds wajib diisi untuk scope specific"})
+		RespondError(c, http.StatusBadRequest, "storeIds wajib diisi untuk scope specific")
 		return
 	}
 
@@ -134,28 +175,34 @@ func UpdateCategory(c *gin.Context) {
 	cat.SortOrder = req.SortOrder
 
 	if err := database.DB.Save(&cat).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update category"})
+		RespondError(c, http.StatusInternalServerError, "Failed to update category")
 		return
 	}
 	logAudit(c, cat.CompanyID, "category_update", "category", cat.ID, cat.Name, nil)
-	c.JSON(http.StatusOK, cat)
+	RespondSuccess(c, cat, "Category updated successfully")
 }
 
 func DeleteCategory(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var cat models.Category
-	if err := database.DB.First(&cat, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&cat, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Category not found")
 		return
 	}
 	var productCount int64
 	database.DB.Model(&models.Product{}).Where("category_id = ?", cat.ID).Count(&productCount)
 	if productCount > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "tidak bisa hapus kategori yang masih dipakai produk"})
+		RespondError(c, http.StatusConflict, "tidak bisa hapus kategori yang masih dipakai produk")
 		return
 	}
 	if err := database.DB.Delete(&cat).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete category"})
+		RespondError(c, http.StatusInternalServerError, "Failed to delete category")
 		return
 	}
 	logAudit(c, cat.CompanyID, "category_delete", "category", cat.ID, cat.Name, nil)
@@ -164,9 +211,15 @@ func DeleteCategory(c *gin.Context) {
 
 func GetCategoryKPI(c *gin.Context) {
 	id := c.Param("id")
+	companyID := getAuthCompanyID(c)
+
 	var cat models.Category
-	if err := database.DB.First(&cat, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+	q := database.DB
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	}
+	if err := q.First(&cat, id).Error; err != nil {
+		RespondError(c, http.StatusNotFound, "Category not found")
 		return
 	}
 	var productCount int64
@@ -185,12 +238,11 @@ func GetCategoryKPI(c *gin.Context) {
 }
 
 // RefreshCategoryKPICache recomputes and persists docs/kategori.md category_kpi_cache.
-// In production this would be invoked by a scheduler; exposed here as a manual trigger.
 func RefreshCategoryKPICache(c *gin.Context) {
 	id := c.Param("id")
 	var cat models.Category
 	if err := database.DB.First(&cat, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+		RespondError(c, http.StatusNotFound, "Category not found")
 		return
 	}
 	var productCount int64
@@ -216,14 +268,14 @@ func RefreshCategoryKPICache(c *gin.Context) {
 		LastSyncedAt: time.Now(),
 	}
 	database.DB.Save(&cache)
-	c.JSON(http.StatusOK, cache)
+	RespondSuccess(c, cache, "Category KPI refreshed")
 }
 
 func GetCategoryKPICache(c *gin.Context) {
 	id := c.Param("id")
 	var cache models.CategoryKPICache
 	if err := database.DB.First(&cache, "category_id = ?", id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "kpi cache belum di-refresh"})
+		RespondError(c, http.StatusNotFound, "kpi cache belum di-refresh")
 		return
 	}
 	c.JSON(http.StatusOK, cache)

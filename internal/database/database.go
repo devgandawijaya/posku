@@ -1,4 +1,4 @@
-﻿package database
+package database
 
 import (
 	"fmt"
@@ -50,6 +50,17 @@ func Migrate() {
 		IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employees' AND column_name='role_id') THEN
 			UPDATE employees SET role_id = (SELECT id FROM roles ORDER BY id ASC LIMIT 1)
 			WHERE role_id IS NULL OR role_id NOT IN (SELECT id FROM roles);
+		END IF;
+
+		-- Pre-migration fixes for enterprise upgrades:
+		-- A. Split Payment support: remove UNIQUE constraint on payments.sales_transaction_id
+		ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_sales_transaction_id_key;
+		ALTER TABLE payments ALTER COLUMN method TYPE varchar(50);
+
+		-- B. Multi-Warehouse support: remove UNIQUE & NOT NULL constraint on warehouses.store_id
+		ALTER TABLE warehouses DROP CONSTRAINT IF EXISTS warehouses_store_id_key;
+		IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='warehouses' AND column_name='store_id') THEN
+			ALTER TABLE warehouses ALTER COLUMN store_id DROP NOT NULL;
 		END IF;
 	END $$;`)
 
@@ -120,6 +131,7 @@ func Migrate() {
 		&models.RentContract{},
 		&models.SalesDailyCache{},
 		&models.StockSummaryCache{},
+		&models.ProductStorePrice{},
 	)
 	if err != nil {
 		panic("Failed to migrate database: " + err.Error())

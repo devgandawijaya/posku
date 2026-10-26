@@ -1,4 +1,4 @@
-﻿package database
+package database
 
 import (
 	"time"
@@ -23,7 +23,7 @@ func SeedSampleData() {
 	store := models.Store{CompanyID: comp.ID, Code: "STR-001", Name: "Toko Utama", Address: "Jl. Sudirman No. 1", Phone: "08123456789", Status: "aktif"}
 	DB.Create(&store)
 
-	wh := models.Warehouse{StoreID: store.ID, Name: "Gudang Utama", Location: "Jl. Sudirman No. 1"}
+	wh := models.Warehouse{CompanyID: comp.ID, StoreID: &store.ID, Code: "WH-0001", Name: "Gudang Utama", Location: "Jl. Sudirman No. 1"}
 	DB.Create(&wh)
 
 	cat := models.Category{CompanyID: comp.ID, Name: "Makanan & Minuman", Code: "FNB"}

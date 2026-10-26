@@ -18,16 +18,21 @@ func parseUintParam(v string) uint {
 
 // GetStockMovements implements docs/stok.md GET /stocks/:productId/movements
 func GetStockMovements(c *gin.Context) {
+	companyID := getAuthCompanyID(c)
 	var list []models.StockMovement
 	q := database.DB.Model(&models.StockMovement{})
+
+	if companyID > 0 {
+		q = q.Where("company_id = ?", companyID)
+	} else if qCID := c.Query("company_id"); qCID != "" {
+		q = q.Where("company_id = ?", qCID)
+	}
+
 	if productID := c.Param("productId"); productID != "" && productID != "movements" {
 		q = q.Where("product_id = ?", productID)
 	}
 	if storeID := c.Query("store_id"); storeID != "" {
 		q = q.Where("store_id = ?", storeID)
-	}
-	if companyID := c.Query("company_id"); companyID != "" {
-		q = q.Where("company_id = ?", companyID)
 	}
 	if dateFrom := c.Query("date_from"); dateFrom != "" {
 		q = q.Where("created_at >= ?", dateFrom)
@@ -35,6 +40,19 @@ func GetStockMovements(c *gin.Context) {
 	if dateTo := c.Query("date_to"); dateTo != "" {
 		q = q.Where("created_at <= ?", dateTo)
 	}
+
+	if c.Query("page") != "" || c.Query("per_page") != "" {
+		var total int64
+		q.Count(&total)
+		page, perPage, offset := GetPagination(c)
+		if err := q.Order("created_at desc").Limit(perPage).Offset(offset).Find(&list).Error; err != nil {
+			RespondError(c, http.StatusInternalServerError, "Failed to fetch stock movements")
+			return
+		}
+		RespondPaginated(c, list, page, perPage, total)
+		return
+	}
+
 	if err := q.Order("created_at desc").Limit(200).Find(&list).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch stock movements"})
 		return
@@ -51,6 +69,17 @@ func GetStockByStore(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, list)
+}
+
+// GetStockByWarehouse returns stock for a product grouped by warehouses.
+func GetStockByWarehouse(c *gin.Context) {
+	productID := c.Param("productId")
+	var list []models.Stock
+	if err := database.DB.Preload("Warehouse.Store").Where("product_id = ?", productID).Find(&list).Error; err != nil {
+		RespondError(c, http.StatusInternalServerError, "Failed to fetch stock")
+		return
+	}
+	RespondSuccess(c, list)
 }
 
 type StockAdjustItemInput struct {
@@ -208,14 +237,30 @@ func CreateStockAdjustment(c *gin.Context) {
 }
 
 func GetStockAdjustments(c *gin.Context) {
+	companyID := getAuthCompanyID(c)
 	var list []models.StockAdjustment
 	q := database.DB.Preload("Items").Model(&models.StockAdjustment{})
-	if companyID := c.Query("company_id"); companyID != "" {
+	if companyID > 0 {
 		q = q.Where("company_id = ?", companyID)
+	} else if qCID := c.Query("company_id"); qCID != "" {
+		q = q.Where("company_id = ?", qCID)
 	}
 	if status := c.Query("status"); status != "" {
 		q = q.Where("status = ?", status)
 	}
+
+	if c.Query("page") != "" || c.Query("per_page") != "" {
+		var total int64
+		q.Count(&total)
+		page, perPage, offset := GetPagination(c)
+		if err := q.Order("created_at desc").Limit(perPage).Offset(offset).Find(&list).Error; err != nil {
+			RespondError(c, http.StatusInternalServerError, "Failed to fetch stock adjustments")
+			return
+		}
+		RespondPaginated(c, list, page, perPage, total)
+		return
+	}
+
 	q.Order("created_at desc").Find(&list)
 	c.JSON(http.StatusOK, list)
 }
