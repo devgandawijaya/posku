@@ -23,70 +23,155 @@ func SetupRoutes(r *gin.Engine) {
 	// Public / auth
 	r.POST("/employees/login", controllers.EmployeeLogin)
 	r.POST("/employees/register", controllers.CreateEmployee)
+	r.POST("/auth/login", controllers.EmployeeLogin)
+	r.POST("/auth/refresh", controllers.RefreshAccessToken)
+	r.POST("/auth/logout", controllers.EmployeeLogout)
+	r.GET("/auth/me", middlewares.AuthRequired(), controllers.EmployeeMe)
+	r.POST("/auth/change-password", middlewares.AuthRequired(), controllers.EmployeeChangePassword)
+	r.POST("/auth/forgot-password", controllers.ForgotPassword)
+	r.POST("/auth/reset-password", controllers.ResetPasswordViaToken)
+	r.POST("/auth/2fa/setup", middlewares.AuthRequired(), controllers.SetupTwoFactor)
+	r.POST("/auth/2fa/enable", middlewares.AuthRequired(), controllers.EnableTwoFactor)
+	r.POST("/auth/2fa/disable", middlewares.AuthRequired(), controllers.DisableTwoFactor)
+	r.POST("/auth/2fa/verify-login", controllers.VerifyLoginTwoFactor)
+
+	// Swagger API Docs
+	r.GET("/swagger", controllers.ServeSwaggerUI)
+	r.GET("/swagger/index.html", controllers.ServeSwaggerUI)
+	r.GET("/swagger/doc.json", controllers.ServeSwaggerJSON)
+	r.GET("/docs/swagger.json", controllers.ServeSwaggerJSON)
 
 	// ===========================
-	// Company routes
+	// Company routes (Tenants)
 	// ===========================
 	r.POST("/companies", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateCompany)
-	r.GET("/companies", controllers.GetCompanies)
-
-	// Specific company route FIRST
-	r.GET("/companies/:id/stores", controllers.GetStoresByCompany)
-
-	// Generic company routes
-	r.GET("/companies/:id", controllers.GetCompany)
+	r.GET("/companies", middlewares.AuthRequired(), controllers.GetCompanies)
+	r.GET("/companies/:id/stores", middlewares.AuthRequired(), controllers.GetStoresByCompany)
+	r.GET("/companies/:id", middlewares.AuthRequired(), controllers.GetCompany)
 	r.PUT("/companies/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.UpdateCompany)
 	r.DELETE("/companies/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.DeleteCompany)
 
 	// ===========================
-	// Store routes
+	// Store routes (Outlets)
 	// ===========================
-	r.POST("/stores", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateStore)
-	r.GET("/stores", controllers.GetStores)
-
-	// Specific store route FIRST (must match wildcard naming)
-	r.GET("/stores/:id/warehouse", controllers.GetWarehouseByStore)
-
-	// Generic store routes
-	r.GET("/stores/:id", controllers.GetStore)
-	r.PUT("/stores/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.UpdateStore)
-	r.DELETE("/stores/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.DeleteStore)
+	r.POST("/stores", middlewares.AuthRequired(), middlewares.RequirePermission("outlet.create"), controllers.CreateStore)
+	r.GET("/stores", middlewares.AuthRequired(), controllers.GetStores)
+	r.GET("/stores/:id/warehouse", middlewares.AuthRequired(), controllers.GetWarehouseByStore)
+	r.GET("/stores/:id", middlewares.AuthRequired(), controllers.GetStore)
+	r.PUT("/stores/:id", middlewares.AuthRequired(), middlewares.RequirePermission("outlet.edit"), controllers.UpdateStore)
+	r.DELETE("/stores/:id", middlewares.AuthRequired(), middlewares.RequirePermission("outlet.delete"), controllers.DeleteStore)
+	r.POST("/stores/:id/toggle-status", middlewares.AuthRequired(), middlewares.RequirePermission("outlet.toggle"), controllers.ToggleStoreStatus)
+	r.GET("/stores/:id/metrics", middlewares.AuthRequired(), controllers.GetStoreMetrics)
+	r.POST("/stores/:id/metrics/refresh", middlewares.AuthRequired(), controllers.RefreshOutletMetricsCache)
+	r.GET("/stores/options", middlewares.AuthRequired(), controllers.GetStoreOptions)
 
 	// ===========================
-	// Warehouse routes
+	// Supplier routes
 	// ===========================
-	r.POST("/warehouses", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateWarehouse)
-	r.GET("/warehouses", controllers.GetWarehouses)
-	r.GET("/warehouses/:id", controllers.GetWarehouse)
-	r.PUT("/warehouses/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.UpdateWarehouse)
-	r.DELETE("/warehouses/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.DeleteWarehouse)
+	r.POST("/suppliers", middlewares.AuthRequired(), middlewares.RequirePermission("supplier.create"), controllers.CreateSupplier)
+	r.GET("/suppliers", middlewares.AuthRequired(), controllers.GetSuppliers)
+	r.GET("/suppliers/:id", middlewares.AuthRequired(), controllers.GetSupplier)
+	r.PATCH("/suppliers/:id", middlewares.AuthRequired(), middlewares.RequirePermission("supplier.edit"), controllers.UpdateSupplier)
+	r.DELETE("/suppliers/:id", middlewares.AuthRequired(), middlewares.RequirePermission("supplier.delete"), controllers.DeleteSupplier)
+	r.POST("/suppliers/:id/toggle-status", middlewares.AuthRequired(), middlewares.RequirePermission("supplier.toggle"), controllers.ToggleSupplierStatus)
+	r.POST("/suppliers/:id/assign-outlets", middlewares.AuthRequired(), middlewares.RequirePermission("supplier.assign"), controllers.AssignSupplierOutlets)
+	r.GET("/suppliers/options", middlewares.AuthRequired(), controllers.GetSupplierOptions)
+	r.POST("/suppliers/:id/purchases", middlewares.AuthRequired(), middlewares.RequirePermission("supplier.create"), controllers.RecordSupplierPurchase)
+
+	// ===========================
+	// Warehouse routes (Gudang & Logistik)
+	// ===========================
+	r.POST("/warehouses", middlewares.AuthRequired(), middlewares.RequirePermission("outlet.create"), controllers.CreateWarehouse)
+	r.GET("/warehouses", middlewares.AuthRequired(), controllers.GetWarehouses)
+	r.GET("/warehouses/:id", middlewares.AuthRequired(), controllers.GetWarehouse)
+	r.PUT("/warehouses/:id", middlewares.AuthRequired(), middlewares.RequirePermission("outlet.edit"), controllers.UpdateWarehouse)
+	r.DELETE("/warehouses/:id", middlewares.AuthRequired(), middlewares.RequirePermission("outlet.delete"), controllers.DeleteWarehouse)
 
 	// ===========================
 	// Product routes
 	// ===========================
-	r.POST("/products", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateProduct)
-	r.GET("/products", controllers.GetProducts)
-	r.GET("/products/:id", controllers.GetProduct)
-	r.PUT("/products/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.UpdateProduct)
-	r.DELETE("/products/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.DeleteProduct)
+	r.POST("/products", middlewares.AuthRequired(), middlewares.RequirePermission("produk.create"), controllers.CreateProduct)
+	r.GET("/products", middlewares.AuthRequired(), controllers.GetProducts)
+	r.GET("/products/:id", middlewares.AuthRequired(), controllers.GetProduct)
+	r.PUT("/products/:id", middlewares.AuthRequired(), middlewares.RequirePermission("produk.edit"), controllers.UpdateProduct)
+	r.DELETE("/products/:id", middlewares.AuthRequired(), middlewares.RequirePermission("produk.delete"), controllers.DeleteProduct)
+	r.POST("/products/bulk-activate", middlewares.AuthRequired(), middlewares.RequirePermission("produk.edit"), controllers.BulkActivateProducts)
+	r.POST("/products/bulk-deactivate", middlewares.AuthRequired(), middlewares.RequirePermission("produk.edit"), controllers.BulkDeactivateProducts)
+	r.POST("/products/bulk-delete", middlewares.AuthRequired(), middlewares.RequirePermission("produk.delete"), controllers.BulkDeleteProducts)
+	r.POST("/products/:id/barcodes", middlewares.AuthRequired(), middlewares.RequirePermission("produk.create"), controllers.AddProductBarcode)
+	r.GET("/products/:id/barcodes", middlewares.AuthRequired(), controllers.GetProductBarcodes)
+	r.GET("/products/:id/price-history", middlewares.AuthRequired(), controllers.GetProductPriceHistory)
+	r.POST("/products/:id/images", middlewares.AuthRequired(), middlewares.RequirePermission("produk.create"), controllers.AddProductImage)
+	r.GET("/products/:id/images", middlewares.AuthRequired(), controllers.GetProductImages)
+	r.DELETE("/products/:id/images/:imageId", middlewares.AuthRequired(), middlewares.RequirePermission("produk.delete"), controllers.DeleteProductImage)
+
+	// Multi-Store Pricing
+	r.POST("/products/:id/store-prices", middlewares.AuthRequired(), middlewares.RequirePermission("produk.edit"), controllers.SetProductStorePrice)
+	r.GET("/products/:id/store-prices", middlewares.AuthRequired(), controllers.GetProductStorePrices)
+	r.DELETE("/products/:id/store-prices/:storeId", middlewares.AuthRequired(), middlewares.RequirePermission("produk.delete"), controllers.DeleteProductStorePrice)
 
 	// ===========================
 	// Employee routes
 	// ===========================
-	r.POST("/employees", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateEmployee)
-	r.GET("/employees", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.GetEmployees)
+	r.POST("/employees", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.create"), controllers.CreateEmployee)
+	r.GET("/employees", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.view"), controllers.GetEmployees)
 	r.GET("/employees/:id", middlewares.AuthRequired(), controllers.GetEmployee)
-	r.PUT("/employees/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.UpdateEmployee)
-	r.DELETE("/employees/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.DeleteEmployee)
+	r.PUT("/employees/:id", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.edit"), controllers.UpdateEmployee)
+	r.DELETE("/employees/:id", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.delete"), controllers.DeleteEmployee)
+	r.POST("/employees/:id/toggle-status", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.toggle"), controllers.ToggleEmployeeStatus)
+	r.POST("/employees/:id/assign-outlets", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.assign"), controllers.AssignEmployeeOutlets)
+	r.POST("/employees/:id/reset-password", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.edit"), controllers.ResetEmployeePassword)
+	r.GET("/users/options", middlewares.AuthRequired(), controllers.GetEmployeeOptions)
+	r.GET("/users/by-outlet/:outletId", middlewares.AuthRequired(), controllers.GetEmployeesByOutlet)
+	r.POST("/users/invite", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.create"), controllers.InviteEmployee)
+	r.POST("/users/accept-invite", controllers.AcceptInvite)
+	r.POST("/users/bulk-import", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.create"), controllers.BulkImportEmployees)
+	r.POST("/users/:id/metrics/refresh", middlewares.AuthRequired(), controllers.RefreshUserMetrics)
+
+	// ===========================
+	// Role & Akses routes (RBAC)
+	// ===========================
+	r.POST("/roles", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.create"), controllers.CreateRole)
+	r.GET("/roles", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.view"), controllers.GetRoles)
+	r.GET("/roles/:id", middlewares.AuthRequired(), controllers.GetRole)
+	r.PATCH("/roles/:id", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.edit"), controllers.UpdateRole)
+	r.PATCH("/roles/:id/permissions", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.edit"), controllers.UpdateRolePermissions)
+	r.POST("/roles/:id/toggle-status", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.toggle"), controllers.ToggleRoleStatus)
+	r.DELETE("/roles/:id", middlewares.AuthRequired(), middlewares.RequirePermission("role_akses.delete"), controllers.DeleteRole)
+	r.GET("/permissions/catalog", middlewares.AuthRequired(), controllers.GetPermissionsCatalog)
+
+	// ===========================
+	// Audit logs
+	// ===========================
+	r.GET("/audit", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.GetAuditLogs)
+	r.GET("/audit/export", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.ExportAuditLogs)
+	r.GET("/audit/entity/:entityType/:entityId", middlewares.AuthRequired(), controllers.GetAuditByEntity)
+	r.GET("/audit/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.GetAuditLog)
+
+	// ===========================
+	// Category routes (Kategori)
+	// ===========================
+	r.POST("/categories", middlewares.AuthRequired(), middlewares.RequirePermission("kategori.create"), controllers.CreateCategory)
+	r.GET("/categories", middlewares.AuthRequired(), controllers.GetCategories)
+	r.GET("/categories/:id", middlewares.AuthRequired(), controllers.GetCategory)
+	r.GET("/categories/:id/kpi", middlewares.AuthRequired(), controllers.GetCategoryKPI)
+	r.POST("/categories/:id/kpi/refresh", middlewares.AuthRequired(), controllers.RefreshCategoryKPICache)
+	r.GET("/categories/:id/kpi/cache", middlewares.AuthRequired(), controllers.GetCategoryKPICache)
+	r.PATCH("/categories/:id", middlewares.AuthRequired(), middlewares.RequirePermission("kategori.edit"), controllers.UpdateCategory)
+	r.DELETE("/categories/:id", middlewares.AuthRequired(), middlewares.RequirePermission("kategori.delete"), controllers.DeleteCategory)
 
 	// ===========================
 	// Customer routes
 	// ===========================
-	r.POST("/customers", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateCustomer)
+	r.POST("/customers", middlewares.AuthRequired(), middlewares.RequirePermission("pelanggan.create"), controllers.CreateCustomer)
 	r.GET("/customers", middlewares.AuthRequired(), controllers.GetCustomers)
 	r.GET("/customers/:id", middlewares.AuthRequired(), controllers.GetCustomer)
-	r.PUT("/customers/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.UpdateCustomer)
-	r.DELETE("/customers/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.DeleteCustomer)
+	r.PUT("/customers/:id", middlewares.AuthRequired(), middlewares.RequirePermission("pelanggan.edit"), controllers.UpdateCustomer)
+	r.DELETE("/customers/:id", middlewares.AuthRequired(), middlewares.RequirePermission("pelanggan.delete"), controllers.DeleteCustomer)
+	r.POST("/customers/:id/points", middlewares.AuthRequired(), middlewares.RequirePermission("pelanggan.edit"), controllers.AdjustCustomerPoints)
+	r.GET("/customers/options", middlewares.AuthRequired(), controllers.GetCustomerOptions)
+	r.GET("/customers/:id/transactions", middlewares.AuthRequired(), controllers.GetCustomerTransactions)
+	r.POST("/customers/:id/metrics/refresh", middlewares.AuthRequired(), controllers.RefreshCustomerMetrics)
 
 	// ===========================
 	// Sales Transactions
@@ -115,16 +200,179 @@ func SetupRoutes(r *gin.Engine) {
 	// ===========================
 	// Stock Transfers
 	// ===========================
-	r.POST("/stock_transfers", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateStockTransfer)
-	r.GET("/stock_transfers", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.GetStockTransfers)
-	r.GET("/stock_transfers/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.GetStockTransfer)
-	r.PUT("/stock_transfers/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.UpdateStockTransfer)
-	r.DELETE("/stock_transfers/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.DeleteStockTransfer)
+	r.POST("/stock_transfers", middlewares.AuthRequired(), middlewares.RequirePermission("stok.create"), controllers.CreateStockTransfer)
+	r.GET("/stock_transfers", middlewares.AuthRequired(), middlewares.RequirePermission("stok.view"), controllers.GetStockTransfers)
+	r.GET("/stock_transfers/:id", middlewares.AuthRequired(), middlewares.RequirePermission("stok.view"), controllers.GetStockTransfer)
+	r.PUT("/stock_transfers/:id", middlewares.AuthRequired(), middlewares.RequirePermission("stok.edit"), controllers.UpdateStockTransfer)
+	r.DELETE("/stock_transfers/:id", middlewares.AuthRequired(), middlewares.RequirePermission("stok.delete"), controllers.DeleteStockTransfer)
 
 	// Transfer Items
-	r.POST("/transfer_items", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateTransferItem)
-	r.GET("/transfer_items", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.GetTransferItems)
-	r.GET("/transfer_items/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.GetTransferItem)
-	r.PUT("/transfer_items/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.UpdateTransferItem)
-	r.DELETE("/transfer_items/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.DeleteTransferItem)
+	r.POST("/transfer_items", middlewares.AuthRequired(), middlewares.RequirePermission("stok.create"), controllers.CreateTransferItem)
+	r.GET("/transfer_items", middlewares.AuthRequired(), middlewares.RequirePermission("stok.view"), controllers.GetTransferItems)
+	r.GET("/transfer_items/:id", middlewares.AuthRequired(), middlewares.RequirePermission("stok.view"), controllers.GetTransferItem)
+	r.PUT("/transfer_items/:id", middlewares.AuthRequired(), middlewares.RequirePermission("stok.edit"), controllers.UpdateTransferItem)
+	r.DELETE("/transfer_items/:id", middlewares.AuthRequired(), middlewares.RequirePermission("stok.delete"), controllers.DeleteTransferItem)
+
+	// ===========================
+	// Returns (Retur & Refund)
+	// ===========================
+	r.POST("/returns", middlewares.AuthRequired(), controllers.CreateReturn)
+	r.GET("/returns", middlewares.AuthRequired(), controllers.GetReturns)
+	r.GET("/returns/:id", middlewares.AuthRequired(), controllers.GetReturn)
+	r.POST("/returns/:id/approve", middlewares.AuthRequired(), middlewares.RequirePermission("stok.approve"), controllers.ApproveReturn)
+	r.POST("/returns/:id/reject", middlewares.AuthRequired(), middlewares.RequirePermission("stok.approve"), controllers.RejectReturn)
+	r.POST("/returns/:id/process", middlewares.AuthRequired(), middlewares.RequirePermission("stok.edit"), controllers.ProcessReturn)
+	r.POST("/returns/:id/complete", middlewares.AuthRequired(), middlewares.RequirePermission("stok.edit"), controllers.CompleteReturn)
+	r.POST("/returns/:id/refund", middlewares.AuthRequired(), middlewares.RequirePermission("kasir.refund"), controllers.RefundReturn)
+	r.GET("/returns/:id/refund-payments", middlewares.AuthRequired(), controllers.GetReturnRefundPayments)
+
+	// ===========================
+	// Sales void/refund (Transaksi)
+	// ===========================
+	r.POST("/sales/:id/void", middlewares.AuthRequired(), middlewares.RequirePermission("kasir.void"), controllers.VoidSalesTransaction)
+	r.POST("/sales/:id/refund", middlewares.AuthRequired(), middlewares.RequirePermission("kasir.refund"), controllers.RefundSalesTransaction)
+	r.POST("/sales/:id/sync", middlewares.AuthRequired(), controllers.SyncSalesTransaction)
+	r.GET("/sales/export", middlewares.AuthRequired(), controllers.ExportSalesTransactions)
+	r.POST("/sales/:id/print", middlewares.AuthRequired(), controllers.PrintSalesTransaction)
+	r.GET("/sales/:id/audit", middlewares.AuthRequired(), controllers.GetSaleAudits)
+	r.GET("/sales/:id/refunds", middlewares.AuthRequired(), controllers.GetSaleRefunds)
+
+	// ===========================
+	// Stock (movements/adjust/restock)
+	// ===========================
+	r.GET("/stocks/:productId/movements", middlewares.AuthRequired(), controllers.GetStockMovements)
+	r.GET("/stocks/:productId/by-store", middlewares.AuthRequired(), controllers.GetStockByStore)
+	r.GET("/stocks/:productId/by-warehouse", middlewares.AuthRequired(), controllers.GetStockByWarehouse)
+	r.POST("/stocks/adjust", middlewares.AuthRequired(), middlewares.RequirePermission("stok.create"), controllers.AdjustStock)
+	r.POST("/stocks/:productId/restock", middlewares.AuthRequired(), middlewares.RequirePermission("stok.create"), controllers.RestockProduct)
+	r.POST("/stocks/adjustments", middlewares.AuthRequired(), middlewares.RequirePermission("stok.create"), controllers.CreateStockAdjustment)
+	r.GET("/stocks/adjustments", middlewares.AuthRequired(), controllers.GetStockAdjustments)
+	r.POST("/stocks/adjustments/:id/submit", middlewares.AuthRequired(), controllers.SubmitStockAdjustment)
+	r.POST("/stocks/adjustments/:id/approve", middlewares.AuthRequired(), middlewares.RequirePermission("stok.approve"), controllers.ApproveStockAdjustment)
+	r.POST("/stocks/adjustments/:id/reject", middlewares.AuthRequired(), middlewares.RequirePermission("stok.approve"), controllers.RejectStockAdjustment)
+
+	// ===========================
+	// Kasir: Shifts, Vouchers, Promotions
+	// ===========================
+	r.POST("/shifts/open", middlewares.AuthRequired(), controllers.OpenShift)
+	r.POST("/shifts/:id/close", middlewares.AuthRequired(), controllers.CloseShift)
+	r.GET("/shifts/:id/summary", middlewares.AuthRequired(), controllers.GetShiftSummary)
+	r.POST("/shifts/:id/cash-movement", middlewares.AuthRequired(), controllers.ShiftCashMovementHandler)
+	r.GET("/shifts/active", middlewares.AuthRequired(), controllers.GetActiveShift)
+	r.GET("/shifts", middlewares.AuthRequired(), controllers.GetShifts)
+
+	r.POST("/vouchers", middlewares.AuthRequired(), middlewares.RequirePermission("kasir.create"), controllers.CreateVoucher)
+	r.GET("/vouchers", middlewares.AuthRequired(), controllers.GetVouchers)
+	r.GET("/cashier/vouchers", middlewares.AuthRequired(), controllers.ValidateVoucher)
+	r.PATCH("/vouchers/:id", middlewares.AuthRequired(), middlewares.RequirePermission("kasir.edit"), controllers.UpdateVoucher)
+	r.DELETE("/vouchers/:id", middlewares.AuthRequired(), middlewares.RequirePermission("kasir.delete"), controllers.DeleteVoucher)
+
+	r.POST("/promotions", middlewares.AuthRequired(), middlewares.RequirePermission("kasir.create"), controllers.CreatePromotion)
+	r.GET("/promotions", middlewares.AuthRequired(), controllers.GetPromotions)
+	r.PATCH("/promotions/:id", middlewares.AuthRequired(), middlewares.RequirePermission("kasir.edit"), controllers.UpdatePromotion)
+	r.DELETE("/promotions/:id", middlewares.AuthRequired(), middlewares.RequirePermission("kasir.delete"), controllers.DeletePromotion)
+
+	// Carts (persisted, hold order, checkout with split payment)
+	r.POST("/carts", middlewares.AuthRequired(), controllers.CreateCart)
+	r.PATCH("/carts/:id/items", middlewares.AuthRequired(), controllers.UpdateCartItems)
+	r.POST("/carts/:id/apply-voucher", middlewares.AuthRequired(), controllers.ApplyCartVoucher)
+	r.POST("/carts/:id/checkout", middlewares.AuthRequired(), controllers.CheckoutCart)
+	r.GET("/cashier/hold-orders", middlewares.AuthRequired(), controllers.GetHoldOrders)
+
+	// ===========================
+	// Finance: Expenses, Payrolls (laporan-keuangan.md)
+	// ===========================
+	r.POST("/expenses", middlewares.AuthRequired(), middlewares.RequirePermission("laporan_keuangan.create"), controllers.CreateExpense)
+	r.GET("/expenses", middlewares.AuthRequired(), controllers.GetExpenses)
+	r.PATCH("/expenses/:id", middlewares.AuthRequired(), middlewares.RequirePermission("laporan_keuangan.edit"), controllers.UpdateExpense)
+	r.DELETE("/expenses/:id", middlewares.AuthRequired(), middlewares.RequirePermission("laporan_keuangan.delete"), controllers.DeleteExpense)
+
+	r.POST("/payrolls", middlewares.AuthRequired(), middlewares.RequirePermission("laporan_keuangan.create"), controllers.CreatePayroll)
+	r.GET("/payrolls", middlewares.AuthRequired(), controllers.GetPayrolls)
+	r.PATCH("/payrolls/:id", middlewares.AuthRequired(), middlewares.RequirePermission("laporan_keuangan.edit"), controllers.UpdatePayroll)
+	r.DELETE("/payrolls/:id", middlewares.AuthRequired(), middlewares.RequirePermission("laporan_keuangan.delete"), controllers.DeletePayroll)
+	r.POST("/payrolls/:id/pay", middlewares.AuthRequired(), middlewares.RequirePermission("laporan_keuangan.edit"), controllers.PayPayroll)
+
+	r.POST("/rent-contracts", middlewares.AuthRequired(), middlewares.RequirePermission("laporan_keuangan.create"), controllers.CreateRentContract)
+	r.GET("/rent-contracts", middlewares.AuthRequired(), controllers.GetRentContracts)
+	r.PATCH("/rent-contracts/:id", middlewares.AuthRequired(), middlewares.RequirePermission("laporan_keuangan.edit"), controllers.UpdateRentContract)
+	r.DELETE("/rent-contracts/:id", middlewares.AuthRequired(), middlewares.RequirePermission("laporan_keuangan.delete"), controllers.DeleteRentContract)
+
+	// ===========================
+	// Reports (laporan-penjualan, laporan-stok, laporan-keuangan)
+	// ===========================
+	r.GET("/reports/sales/summary", middlewares.AuthRequired(), controllers.GetSalesSummaryReport)
+	r.GET("/reports/sales/timeseries", middlewares.AuthRequired(), controllers.GetSalesTimeseriesReport)
+	r.GET("/reports/sales/by-payment", middlewares.AuthRequired(), controllers.GetSalesByPaymentReport)
+	r.GET("/reports/sales/by-store", middlewares.AuthRequired(), controllers.GetSalesByStoreReport)
+	r.GET("/reports/sales/by-employee", middlewares.AuthRequired(), controllers.GetSalesByEmployeeReport)
+	r.GET("/reports/sales/by-shift", middlewares.AuthRequired(), controllers.GetSalesByShiftReport)
+	r.GET("/reports/sales/top-products", middlewares.AuthRequired(), controllers.GetTopProductsReport)
+
+	r.GET("/reports/stock/summary", middlewares.AuthRequired(), controllers.GetStockSummaryReport)
+	r.GET("/reports/stock/by-warehouse", middlewares.AuthRequired(), controllers.GetStockByWarehouseReport)
+	r.GET("/reports/stock/by-category", middlewares.AuthRequired(), controllers.GetStockByCategoryReport)
+	r.GET("/reports/stock/movement", middlewares.AuthRequired(), controllers.GetStockMovementReport)
+	r.GET("/reports/stock/top-low", middlewares.AuthRequired(), controllers.GetTopLowStockReport)
+
+	r.GET("/reports/finance/pl", middlewares.AuthRequired(), controllers.GetFinancePLReport)
+	r.GET("/reports/finance/expense-breakdown", middlewares.AuthRequired(), controllers.GetFinanceExpenseBreakdownReport)
+	r.GET("/reports/finance/cashflow", middlewares.AuthRequired(), controllers.GetFinanceCashflowReport)
+	r.GET("/reports/sales/export", middlewares.AuthRequired(), controllers.ExportSalesReport)
+	r.GET("/reports/stock/export", middlewares.AuthRequired(), controllers.ExportStockReport)
+	r.GET("/reports/finance/export", middlewares.AuthRequired(), controllers.ExportFinanceReport)
+	r.POST("/reports/sales/daily-cache/refresh", middlewares.AuthRequired(), controllers.RefreshSalesDailyCache)
+	r.GET("/reports/sales/daily-cache", middlewares.AuthRequired(), controllers.GetSalesDailyCache)
+	r.POST("/reports/stock/summary-cache/refresh", middlewares.AuthRequired(), controllers.RefreshStockSummaryCache)
+	r.GET("/reports/stock/summary-cache", middlewares.AuthRequired(), controllers.GetStockSummaryCache)
+
+	// ===========================
+	// Dashboard (monitoring)
+	// ===========================
+	r.GET("/dashboard/summary", middlewares.AuthRequired(), controllers.GetDashboardSummary)
+	r.GET("/dashboard/alerts", middlewares.AuthRequired(), controllers.GetDashboardAlerts)
+	r.POST("/alerts/:id/acknowledge", middlewares.AuthRequired(), controllers.AcknowledgeAlert)
+	r.POST("/alerts/:id/resolve", middlewares.AuthRequired(), controllers.ResolveAlert)
+	r.GET("/dashboard/shifts/active", middlewares.AuthRequired(), controllers.GetDashboardShiftsActive)
+	r.GET("/dashboard/payment-mix", middlewares.AuthRequired(), controllers.GetPaymentMix)
+	r.GET("/dashboard/saas-metrics", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.GetSaasMetrics)
+	r.POST("/dashboard/alerts/generate", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.GenerateDashboardAlerts)
+	r.POST("/devices", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateDevice)
+	r.GET("/devices", middlewares.AuthRequired(), controllers.GetDevices)
+	r.POST("/devices/:id/heartbeat", controllers.DeviceHeartbeat)
+
+	// ===========================
+	// Integrations
+	// ===========================
+	r.GET("/integrations/catalog", middlewares.AuthRequired(), controllers.GetIntegrationCatalog)
+	r.GET("/integrations", middlewares.AuthRequired(), controllers.GetIntegrations)
+	r.GET("/integrations/:id", middlewares.AuthRequired(), controllers.GetIntegration)
+	r.POST("/integrations/:id/connect", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.ConnectIntegration)
+	r.POST("/integrations/:id/disconnect", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.DisconnectIntegration)
+	r.POST("/integrations/:id/test", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.TestIntegration)
+	r.GET("/integrations/:id/logs", middlewares.AuthRequired(), controllers.GetIntegrationLogs)
+	r.POST("/webhooks/in/:provider", controllers.InboundWebhook)
+	r.POST("/webhooks", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateWebhook)
+	r.GET("/webhooks", middlewares.AuthRequired(), controllers.GetWebhooks)
+	r.DELETE("/webhooks/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.DeleteWebhook)
+
+	// ===========================
+	// Subscription & Billing
+	// ===========================
+	r.GET("/billing/plans", controllers.GetPlans)
+	r.GET("/billing/subscription", middlewares.AuthRequired(), controllers.GetSubscription)
+	r.POST("/billing/subscription", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateSubscription)
+	r.POST("/billing/subscription/change-plan", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.ChangeSubscriptionPlan)
+	r.POST("/billing/subscription/cancel", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CancelSubscription)
+	r.GET("/billing/invoices", middlewares.AuthRequired(), controllers.GetInvoices)
+	r.GET("/billing/invoices/:id", middlewares.AuthRequired(), controllers.GetInvoice)
+	r.POST("/billing/invoices/:id/pay", middlewares.AuthRequired(), controllers.PayInvoice)
+	r.POST("/billing/invoices/generate", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.GenerateInvoice)
+	r.GET("/billing/payment-methods", middlewares.AuthRequired(), controllers.GetPaymentMethods)
+	r.POST("/billing/payment-methods", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreatePaymentMethod)
+	r.DELETE("/billing/payment-methods/:id", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.DeletePaymentMethod)
+	r.POST("/billing/coupons", middlewares.AuthRequired(), middlewares.RequireRoles("admin"), controllers.CreateCoupon)
+	r.GET("/billing/coupons", middlewares.AuthRequired(), controllers.GetCoupons)
+	r.GET("/billing/coupons/validate", middlewares.AuthRequired(), controllers.ValidateCoupon)
+	r.GET("/billing/usage", middlewares.AuthRequired(), controllers.GetUsage)
 }

@@ -44,6 +44,18 @@ func CreateStockTransfer(c *gin.Context) {
 		return
 	}
 
+	var fromStoreModel, toStoreModel models.Store
+	if err := tx.First(&fromStoreModel, req.FromStoreID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "from store not found"})
+		return
+	}
+	if err := tx.First(&toStoreModel, req.ToStoreID).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, gin.H{"error": "to store not found"})
+		return
+	}
+
 	st := models.StockTransfer{
 		FromStoreID: uint(req.FromStoreID),
 		ToStoreID:   uint(req.ToStoreID),
@@ -122,6 +134,25 @@ func CreateStockTransfer(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create transfer item"})
 			return
 		}
+
+		tx.Create(&models.StockMovement{
+			CompanyID: fromStoreModel.CompanyID,
+			ProductID: it.ProductID,
+			StoreID:   fromStoreModel.ID,
+			Delta:     -float64(it.Quantity),
+			Reason:    "transfer_out",
+			RefType:   "transfer",
+			RefID:     &st.ID,
+		})
+		tx.Create(&models.StockMovement{
+			CompanyID: toStoreModel.CompanyID,
+			ProductID: it.ProductID,
+			StoreID:   toStoreModel.ID,
+			Delta:     float64(it.Quantity),
+			Reason:    "transfer_in",
+			RefType:   "transfer",
+			RefID:     &st.ID,
+		})
 	}
 
 	tx.Commit()
